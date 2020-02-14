@@ -43,10 +43,34 @@ defmodule Explorer.Token.BalanceReader do
           %{token_contract_address_hash: String.t(), address_hash: String.t(), block_number: non_neg_integer()}
         ]) :: [{:ok, non_neg_integer()} | {:error, String.t()}]
   def get_balances_of(token_balance_requests) do
-    token_balance_requests
-    |> Enum.map(&format_balance_request/1)
-    |> Reader.query_contracts(@balance_function_abi)
-    |> Enum.map(&format_balance_result/1)
+    regular_balances =
+      token_balance_requests
+      |> Enum.map(&format_balance_request/1)
+      |> Reader.query_contracts(@balance_function_abi)
+      |> Enum.map(&format_balance_result/1)
+
+    erc1155_balances =
+      token_balance_requests
+      |> Enum.filter(fn request ->
+        request.token_type == "ERC-1155"
+      end)
+      |> Enum.map(fn %{
+                       address_hash: address_hash,
+                       block_number: block_number,
+                       token_contract_address_hash: token_contract_address_hash,
+                       token_id: token_id
+                     } ->
+        %{
+          contract_address: token_contract_address_hash,
+          function_name: "balanceOf",
+          args: [address_hash, token_id],
+          block_number: block_number
+        }
+      end)
+      |> Reader.query_contracts(@erc1155_balance_function_abi)
+      |> Enum.map(&format_balance_result/1)
+
+    regular_balances ++ erc1155_balances
   end
 
   @spec get_balances_of_with_abi(
