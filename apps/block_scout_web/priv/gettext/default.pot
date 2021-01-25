@@ -3574,3 +3574,20 @@ msgstr ""
 #: lib/block_scout_web/templates/address_contract_verification/new.html.eex:47
 msgid "Vyper contract"
 msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address_internal_transaction/index.html.eex:68
+#: lib/block_scout_web/templates/address_logs/index.html.eex:38 lib/block_scout_web/templates/address_token/index.html.eex:32
+#: lib/block_scout_web/templates/address_transaction/index.html.eex:69
+msgid "CSV"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/csv_export/index.html.eex:25
+msgid "Download"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/csv_export/index.html.eex:10
+msgid "Export Data"
+msgstr ""
