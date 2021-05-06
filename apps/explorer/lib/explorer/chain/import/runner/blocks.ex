@@ -396,6 +396,7 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
           tb.token_id,
           tb.address_hash,
           tb.token_id,
+          tb.address_hash,
           tb.block_number
         ],
         lock: "FOR UPDATE"
