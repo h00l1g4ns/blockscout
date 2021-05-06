@@ -556,6 +556,8 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
         options
       )
 
+    result = result_with_token_id ++ result_no_token_id
+
     derived_address_current_token_balances =
       Enum.map(result, &Map.take(&1, [:address_hash, :token_contract_address_hash, :token_id, :block_number, :value]))
 
