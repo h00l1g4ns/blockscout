@@ -3576,9 +3576,7 @@ msgid "Vyper contract"
 msgstr ""
 
 #, elixir-format
-#: lib/block_scout_web/templates/address_internal_transaction/index.html.eex:68
-#: lib/block_scout_web/templates/address_logs/index.html.eex:38 lib/block_scout_web/templates/address_token/index.html.eex:32
-#: lib/block_scout_web/templates/address_transaction/index.html.eex:69
+#: lib/block_scout_web/templates/common_components/_csv_export_button.html.eex:2
 msgid "CSV"
 msgstr ""
 
@@ -3590,4 +3588,110 @@ msgstr ""
 #, elixir-format
 #: lib/block_scout_web/templates/csv_export/index.html.eex:10
 msgid "Export Data"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:166
+msgid "Address balance in xDAI (doesn't include ERC20, ERC721, ERC1155 tokens)."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:191
+msgid "All tokens in the account and total value."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:249
+msgid "Block number in which the address was updated."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:120
+msgid "Creator"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:236
+#: lib/block_scout_web/templates/address/overview.html.eex:265
+msgid "Gas used by the address."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:149
+msgid "Implementation"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:148
+msgid "Implementation address of the proxy contract."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:250
+msgid "Last Balance Update"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address_token/overview.html.eex:44
+msgid "Net Worth"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:202
+msgid "Number of transactions related to this address."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:219
+msgid "Number of transfers to/from this address."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address_token/overview.html.eex:52
+msgid "Shows the current"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address_token/overview.html.eex:59
+msgid "Shows the tokens held in the address (includes ERC-20, ERC-721 and ERC-1155)."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address_token/overview.html.eex:45
+msgid "Shows total assets held in the address"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:92
+msgid "The name found in the source code of the Contract."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:103
+msgid "The name of the validator."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:73
+msgid "Token"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:72
+msgid "Token name and symbol."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:119
+msgid "Transactions and address of creation."
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address/overview.html.eex:104
+msgid "Validator Name"
+msgstr ""
+
+#, elixir-format
+#: lib/block_scout_web/templates/address_token/overview.html.eex:52
+msgid "balance of the address"
 msgstr ""
