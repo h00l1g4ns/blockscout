@@ -9,7 +9,7 @@ defmodule Explorer.Chain.Address.CurrentTokenBalance do
   use Explorer.Schema
 
   import Ecto.Changeset
-  import Ecto.Query, only: [from: 2, limit: 2, offset: 2, order_by: 3, preload: 2, where: 3]
+  import Ecto.Query, only: [from: 2, limit: 2, offset: 2, order_by: 3, preload: 2]
 
   alias Explorer.{Chain, PagingOptions}
   alias Explorer.Chain.{Address, Block, BridgedToken, Hash, Token}
@@ -249,16 +249,6 @@ defmodule Explorer.Chain.Address.CurrentTokenBalance do
       where: tb.token_contract_address_hash == ^token_contract_address_hash,
       where: tb.address_hash != ^@burn_address_hash,
       where: tb.value > 0
-    )
-  end
-
-  defp page_token_balances(query, %PagingOptions{key: nil}), do: query
-
-  defp page_token_balances(query, %PagingOptions{key: {value, address_hash}}) do
-    where(
-      query,
-      [tb],
-      tb.value < ^value or (tb.value == ^value and tb.address_hash < ^address_hash)
     )
   end
 end
