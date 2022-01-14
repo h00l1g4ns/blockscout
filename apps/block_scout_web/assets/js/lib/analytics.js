@@ -61,13 +61,23 @@ function getPageName (path) {
       return 'home'
     case path === fullPath('/txs'):
       return 'validatedTransactions'
-    case path === fullPath('/pending_transactions'):
+    case path === fullPath('/pending-transactions'):
       return 'pendingTransactions'
     case path === fullPath('/blocks'):
       return 'blockHistory'
     case path === fullPath('/accounts'):
       return 'allAccounts'
+    case path === '/tokens':
+      return 'allTokens'
+    case path === '/graphiql':
+      return 'graphiql'
+    case path === '/api-docs':
+      return 'apiDocs'
+    case path === '/eth-rpc-api-docs':
+      return 'ethRpcApiDocs'
     case path.includes('/blocks') && path.includes('/transactions'):
+      return 'blockTransactions'
+    case path.includes('/block') && path.includes('/transactions'):
       return 'blockTransactions'
     case path.includes('/blocks') && path.includes('/signers'):
       return 'blockSigners'
@@ -100,8 +110,14 @@ function getPageName (path) {
       return 'transactionLogs'
     case path.includes('/tx') && path.includes('/raw-trace'):
       return 'transactionRawTrace'
-    case path.includes('/tx') && path.includes('/token_transfers'):
+    case path.includes('/tx') && path.includes('/token-transfers'):
       return 'transactionTokenTransfers'
+    case path.includes('/tokens') && path.includes('/token-transfers'):
+      return 'tokenDetails'
+    case path.includes('/csv-export') && path.includes('address') && path.includes('transactions'):
+      return 'csvExportAddressTransactions'
+    case path.includes('/csv-export') && path.includes('address') && path.includes('token-transfers'):
+      return 'csvExportAddressTokenTransfers'
     default:
       return path
   }
@@ -241,6 +257,28 @@ function trackEvents () {
         page: getPageName(path),
         module: 'tokenTransferOverview',
         entityId,
+        ...getCommonData()
+      })
+    })
+
+    // "csv download" click
+    $('[data-selector="csv-download"]').on('click', function () {
+      const path = window.location.pathname
+      analytics.track('click', {
+        targetName: 'csvDownload',
+        page: getPageName(path),
+        entityId: getEntityId(path),
+        ...getCommonData()
+      })
+    })
+
+    // apps navigator click
+    $('[data-selector="app-url"]').on('click', function () {
+      const path = window.location.pathname
+      analytics.track('click', {
+        targetName: 'appNavigator',
+        page: getPageName(path),
+        entityId: getEntityId(path),
         ...getCommonData()
       })
     })
