@@ -11,9 +11,9 @@ defmodule BlockScoutWeb.CSPHeader do
   def call(conn, _opts) do
     Controller.put_secure_browser_headers(conn, %{
       "content-security-policy" => "\
-        connect-src 'self' #{websocket_endpoints(conn)} wss://*.bridge.walletconnect.org/ https://cdn.segment.com https://api.segment.io https://raw.githubusercontent.com/trustwallet/assets/ https://registry.walletconnect.org/data/wallets.json; \
-        default-src 'self' https://cdn.segment.com https://api.segment.io; \
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://cdn.segment.com https://api.segment.io; \
+        connect-src 'self' 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' #{websocket_endpoints(conn)} wss://*.bridge.walletconnect.org/ https://cdn.segment.com https://api.segment.io https://raw.githubusercontent.com/trustwallet/assets/ https://registry.walletconnect.org/data/wallets.json; \
+        default-src 'self'; \
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' https://www.google.com https://www.gstatic.com https://cdn.segment.com https://api.segment.io; \
         style-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com; \
         img-src 'self' * data:;\
         media-src 'self' * data:;\
