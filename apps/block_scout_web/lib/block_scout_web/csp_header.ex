@@ -13,7 +13,7 @@ defmodule BlockScoutWeb.CSPHeader do
       "content-security-policy" => "\
         connect-src 'self' #{websocket_endpoints(conn)} wss://*.bridge.walletconnect.org/ https://raw.githubusercontent.com/trustwallet/assets/ https://registry.walletconnect.org/data/wallets.json; \
         default-src 'self';\
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://cdn.segment.com/analytics.js;\
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://cdn.segment.com https://api.segment.io \
         style-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com;\
         img-src 'self' * data:;\
         media-src 'self' * data:;\
