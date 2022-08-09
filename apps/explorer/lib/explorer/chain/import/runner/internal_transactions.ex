@@ -395,7 +395,7 @@ defmodule Explorer.Chain.Import.Runner.InternalTransactions do
             end)
 
           # ShareLocks order already enforced by `acquire_pending_internal_txs` (see docs: sharelocks.md)
-          {count, result} = repo.delete_all(delete_query, [])
+          {count, result} = repo.delete_all(delete_query, prepare: :unnamed)
 
           {:ok, {count, result}}
         rescue
