@@ -13,7 +13,9 @@ defmodule BlockScoutWeb.AddressTransactionController do
 
   alias Explorer.Chain.{
     AddressInternalTransactionCsvExporter,
-    AddressLogCsvExporter
+    AddressLogCsvExporter,
+    AddressTokenTransferCsvExporter,
+    AddressTransactionCsvExporter
   }
 
   alias Explorer.ExchangeRates.Token

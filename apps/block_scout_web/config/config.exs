@@ -68,6 +68,7 @@ config :block_scout_web,
   re_captcha_api_key: System.get_env("RE_CAPTCHA_API_KEY", nil),
   re_captcha_project_id: System.get_env("RE_CAPTCHA_PROJECT_ID", nil)
 
+
 config :block_scout_web, BlockScoutWeb.Counters.BlocksIndexedCounter, enabled: true
 
 # Configures the endpoint
