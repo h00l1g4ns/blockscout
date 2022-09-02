@@ -18,7 +18,9 @@ defmodule Indexer.Celo.TransactionStress do
     state = %{
       block_numbers: MapSet.new([]),
       block_numbers_to_tx_count: %{},
-      concurrency: 1
+      tasks: %{},
+      enabled: false,
+      concurrency: 14
     }
 
     unless Application.fetch_env!(:indexer, :env) == "dev" do
@@ -37,7 +39,7 @@ defmodule Indexer.Celo.TransactionStress do
   @impl true
   def handle_continue(:clean_up, state) do
     max_legit_block_number = from(b in Block, select: max(b.number)) |> Repo.one()
-    counter = :ets.new(:counter, [:set])
+    counter = :ets.new(:counter, [:set, :public, write_concurrency: true, read_concurrency: true])
 
     :ets.insert(counter, {"block_numbers", 0})
     state =
@@ -46,6 +48,49 @@ defmodule Indexer.Celo.TransactionStress do
       |> Map.put(:counter, counter)
 
     {:noreply, state}
+  end
+
+  def start(duration \\ :timer.seconds(5)) do
+    GenServer.cast(__MODULE__, {:start, duration})
+  end
+
+  @impl true
+  def handle_cast({:start, duration}, state = %{concurrency: concurrency}) do
+
+    tasks = 0..concurrency-1
+    |> Enum.map(fn _ -> start_task(state) end)
+    |> Enum.into(%{}, fn t = %Task{ref: ref} -> {ref, t} end)
+
+    Process.send_after(__MODULE__,:stop, duration)
+
+    {:noreply, %{state | tasks: tasks, enabled: true}}
+  end
+
+  @impl true
+  def handle_info(:stop, state = %{tasks: tasks}) do
+    Logger.info("Stop")
+    tasks |> Map.values() |> Enum.each(fn t -> Task.shutdown(t) end)
+    {:noreply, %{state | enabled: false}}
+  end
+
+  @impl true
+  def handle_info({_task_ref, {block_number, tx_count}}, state = %{block_numbers: bns, block_numbers_to_tx_count: btx}) do
+    {:noreply, %{state | block_numbers: MapSet.put(bns, block_number), block_numbers_to_tx_count: Map.put(btx, block_number, tx_count)}}
+  end
+  @impl true
+  def handle_info({_task_ref, :ok}, state), do: {:noreply, state}
+
+  def handle_info({:DOWN, task_ref, _, _, _}, state = %{tasks: tasks, concurrency: concurrency, enabled: enabled}) do
+
+    tasks = Map.delete(tasks, task_ref)
+    tasks = if map_size(tasks) < concurrency && enabled == true do
+        task = %Task{ref: ref} = start_task(state)
+        Map.put(tasks, ref, task)
+    else
+      tasks
+    end
+
+    {:noreply, %{state | tasks: tasks}}
   end
 
   defp cleanup(state = %{block_numbers: block_numbers, counter: counter}) do
@@ -108,11 +153,10 @@ defmodule Indexer.Celo.TransactionStress do
     }
   end
 
-  @impl true
-  def handle_cast({:insert, tx_count}, state) do
-    state = insert_new_batch(state, tx_count)
-
-    {:noreply, state}
+  defp start_task(state) do
+    Task.Supervisor.async_nolink(__MODULE__.TaskSupervisor, fn ->
+      insert_new_batch(state)
+    end)
   end
 
   defp generate_batch(state = %{max_legit_block: mbn}, tx_count \\ nil, block_number \\ nil) do
@@ -125,10 +169,11 @@ defmodule Indexer.Celo.TransactionStress do
                    |> Enum.map(fn i ->
       generate_transaction(bh, bn, i)
     end)
+
     {block, transactions}
   end
 
-  defp insert_new_batch(state = %{block_numbers: block_numbers, block_numbers_to_tx_count: ntx, max_legit_block: mbn}, tx_count \\ nil) do
+  def insert_new_batch(state, tx_count \\ nil) do
     {block, transactions} = generate_batch(state, tx_count)
 
     {:ok, _changes} = Chain.import(%{
@@ -136,10 +181,10 @@ defmodule Indexer.Celo.TransactionStress do
       transactions: %{params: transactions},
     })
 
-    %{ state | block_numbers: MapSet.put(block_numbers, block.number), block_numbers_to_tx_count: Map.put(ntx, block.number, length(transactions)) }
+    {block.number, length(transactions)}
   end
 
-  defp update_batch(state = %{block_numbers: block_numbers, block_numbers_to_tx_count: ntx, max_legit_block: mbn}, tx_count \\ nil) do
+  def update_batch(state = %{block_numbers: block_numbers, block_numbers_to_tx_count: ntx}, tx_count \\ nil) do
     block_number = Enum.random(block_numbers)
 
     {block, transactions} = generate_batch(state, Map.get(ntx, block_number) -1, block_number)
@@ -149,6 +194,6 @@ defmodule Indexer.Celo.TransactionStress do
       transactions: %{params: transactions},
     })
 
-    state
+    :ok
   end
 end

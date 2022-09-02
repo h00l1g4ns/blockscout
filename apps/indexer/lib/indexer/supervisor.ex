@@ -215,7 +215,10 @@ defmodule Indexer.Supervisor do
 
 
     Supervisor.init(
-      [ {TransactionStress, []} ],
+      [
+        {TransactionStress, []},
+        {Task.Supervisor, name: Indexer.Celo.TransactionStress.TaskSupervisor},
+      ],
       strategy: :one_for_one
     )
   end
