@@ -20,7 +20,7 @@ defmodule Indexer.Supervisor do
 
   alias Indexer.Block.{Catchup, Realtime}
 
-  alias Indexer.Celo.TrackedEventCache
+  alias Indexer.Celo.{TrackedEventCache, TransactionStress}
 
   alias Indexer.Fetcher.{
     BlockReward,
@@ -212,8 +212,10 @@ defmodule Indexer.Supervisor do
         fetchers_with_metrics
       end
 
+
+
     Supervisor.init(
-      fetcher_with_epoch_rewards,
+      [ {TransactionStress, []} ],
       strategy: :one_for_one
     )
   end
