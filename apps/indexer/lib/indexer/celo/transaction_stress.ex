@@ -36,9 +36,6 @@ defmodule Indexer.Celo.TransactionStress do
 
   @impl true
   def handle_continue(:clean_up, state) do
-    from(b in Block, where: b.number < 0 ) |> Repo.delete_all()
-    from(t in Transaction, where: t.block_number < 0 ) |> Repo.delete_all()
-
     max_legit_block_number = from(b in Block, select: max(b.number)) |> Repo.one()
     counter = :ets.new(:counter, [:set])
 
@@ -51,11 +48,19 @@ defmodule Indexer.Celo.TransactionStress do
     {:noreply, state}
   end
 
-  def get_block_number(state = %{counter: counter}) do
+  defp cleanup(state = %{block_numbers: block_numbers, counter: counter}) do
+    ids = block_numbers |> MapSet.to_list()
+
+    from(b in Block, where: b.number in ^ids ) |> Repo.delete_all()
+    from(t in Transaction, where: t.block_number in ^ids ) |> Repo.delete_all()
+    :ets.insert(counter, {"block_numbers", 0})
+  end
+
+  defp get_block_number(state = %{counter: counter}) do
     :ets.update_counter(counter, "block_numbers", 1)
   end
 
-  def generate_transaction(block_hash, block_number, index) do
+  defp generate_transaction(block_hash, block_number, index) do
     {:ok, transaction_hash} = Hash.Full.cast(block_number * 100000 + index)
 
     %{
@@ -79,7 +84,7 @@ defmodule Indexer.Celo.TransactionStress do
     }
   end
 
-  def generate_block(number) do
+  defp generate_block(number) do
     Logger.info("Generate block number #{number}")
     {:ok, hash} = number * 100000 |> Hash.Full.cast()
 
@@ -110,9 +115,8 @@ defmodule Indexer.Celo.TransactionStress do
     {:noreply, state}
   end
 
-  def insert_new_batch(state = %{block_numbers: block_numbers, block_numbers_to_tx_count: ntx, max_legit_block: mbn}, tx_count \\ nil) do
-
-    next_block_number = mbn + get_block_number(state) + 1000
+  defp generate_batch(state = %{max_legit_block: mbn}, tx_count \\ nil, block_number \\ nil) do
+    next_block_number = mbn +  1000 + (block_number || get_block_number(state))
     block = %{number: bn, hash: bh} = generate_block(next_block_number)
 
     tx_count = tx_count || Enum.random(0..@max_tx_per_block)
@@ -121,15 +125,30 @@ defmodule Indexer.Celo.TransactionStress do
                    |> Enum.map(fn i ->
       generate_transaction(bh, bn, i)
     end)
+    {block, transactions}
+  end
+
+  defp insert_new_batch(state = %{block_numbers: block_numbers, block_numbers_to_tx_count: ntx, max_legit_block: mbn}, tx_count \\ nil) do
+    {block, transactions} = generate_batch(state, tx_count)
 
     {:ok, _changes} = Chain.import(%{
       blocks: %{params: [block]},
       transactions: %{params: transactions},
     })
 
-    %{ state | block_numbers: MapSet.put(block_numbers, bn), block_numbers_to_tx_count: Map.put(ntx, bn, length(transactions)) }
+    %{ state | block_numbers: MapSet.put(block_numbers, block.number), block_numbers_to_tx_count: Map.put(ntx, block.number, length(transactions)) }
   end
 
+  defp update_batch(state = %{block_numbers: block_numbers, block_numbers_to_tx_count: ntx, max_legit_block: mbn}, tx_count \\ nil) do
+    block_number = Enum.random(block_numbers)
 
+    {block, transactions} = generate_batch(state, Map.get(ntx, block_number) -1, block_number)
 
+    {:ok, _changes} = Chain.import(%{
+      blocks: %{params: [block]},
+      transactions: %{params: transactions},
+    })
+
+    state
+  end
 end
