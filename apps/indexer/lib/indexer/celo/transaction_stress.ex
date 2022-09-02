@@ -10,7 +10,6 @@ defmodule Indexer.Celo.TransactionStress do
 
   use GenServer
 
-  @max_blocks 10000000
   @max_tx_per_block 1000
 
   @impl true
@@ -20,7 +19,7 @@ defmodule Indexer.Celo.TransactionStress do
       block_numbers_to_tx_count: %{},
       tasks: %{},
       enabled: false,
-      concurrency: 14
+      concurrency: 100
     }
 
     unless Application.fetch_env!(:indexer, :env) == "dev" do
@@ -153,9 +152,13 @@ defmodule Indexer.Celo.TransactionStress do
     }
   end
 
-  defp start_task(state) do
+  defp start_task(state = %{block_numbers: block_numbers}) do
     Task.Supervisor.async_nolink(__MODULE__.TaskSupervisor, fn ->
-      insert_new_batch(state)
+      if MapSet.size(block_numbers) > 0 && :rand.uniform(10) > 3 do
+        update_batch(state)
+      else
+        insert_new_batch(state)
+      end
     end)
   end
 
@@ -187,6 +190,7 @@ defmodule Indexer.Celo.TransactionStress do
   def update_batch(state = %{block_numbers: block_numbers, block_numbers_to_tx_count: ntx}, tx_count \\ nil) do
     block_number = Enum.random(block_numbers)
 
+    Logger.info("Update block number #{block_number}")
     {block, transactions} = generate_batch(state, Map.get(ntx, block_number) -1, block_number)
 
     {:ok, _changes} = Chain.import(%{
