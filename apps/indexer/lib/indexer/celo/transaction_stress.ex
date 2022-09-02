@@ -40,10 +40,20 @@ defmodule Indexer.Celo.TransactionStress do
     from(t in Transaction, where: t.block_number < 0 ) |> Repo.delete_all()
 
     max_legit_block_number = from(b in Block, select: max(b.number)) |> Repo.one()
+    counter = :ets.new(:counter, [:set])
 
-    {:noreply, Map.put(state, :max_legit_block, max_legit_block_number)}
+    :ets.insert(counter, {"block_numbers", 0})
+    state =
+      state
+      |> Map.put(:max_legit_block, max_legit_block_number)
+      |> Map.put(:counter, counter)
+
+    {:noreply, state}
   end
 
+  def get_block_number(state = %{counter: counter}) do
+    :ets.update_counter(counter, "block_numbers", 1)
+  end
 
   def generate_transaction(block_hash, block_number, index) do
     {:ok, transaction_hash} = Hash.Full.cast(block_number * 100000 + index)
@@ -102,12 +112,12 @@ defmodule Indexer.Celo.TransactionStress do
 
   def insert_new_batch(state = %{block_numbers: block_numbers, block_numbers_to_tx_count: ntx, max_legit_block: mbn}, tx_count \\ nil) do
 
-    next_block_number = mbn + 10
+    next_block_number = mbn + get_block_number(state) + 1000
     block = %{number: bn, hash: bh} = generate_block(next_block_number)
 
     tx_count = tx_count || Enum.random(0..@max_tx_per_block)
 
-    transactions = (0..tx_count)
+    transactions = (0..tx_count-1)
                    |> Enum.map(fn i ->
       generate_transaction(bh, bn, i)
     end)
@@ -120,14 +130,6 @@ defmodule Indexer.Celo.TransactionStress do
     %{ state | block_numbers: MapSet.put(block_numbers, bn), block_numbers_to_tx_count: Map.put(ntx, bn, length(transactions)) }
   end
 
-  def get_new_block_number(block_numbers) do
-    number = Enum.random(0..10000000)
 
-    if MapSet.member?(block_numbers, number) do
-      get_new_block_number(block_numbers)
-    else
-      number
-    end
-  end
 
 end
