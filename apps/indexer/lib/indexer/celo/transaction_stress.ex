@@ -53,6 +53,13 @@ defmodule Indexer.Celo.TransactionStress do
     GenServer.cast(__MODULE__, {:start, duration})
   end
 
+  def set_concurrency(concurrency) do
+    GenServer.cast(__MODULE__, {:set_concurrency, concurrency})
+  end
+
+  @impl true
+  def handle_cast({:set_concurrency, concurrency}, state), do: {:noreply, %{state | concurrency: concurrency}}
+
   @impl true
   def handle_cast({:start, duration}, state = %{concurrency: concurrency}) do
 
@@ -69,6 +76,9 @@ defmodule Indexer.Celo.TransactionStress do
   def handle_info(:stop, state = %{tasks: tasks}) do
     Logger.info("Stop")
     tasks |> Map.values() |> Enum.each(fn t -> Task.shutdown(t) end)
+
+
+    #todo: also remove inserted blocks + transactions
     {:noreply, %{state | enabled: false}}
   end
 
