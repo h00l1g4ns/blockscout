@@ -83,13 +83,13 @@ function getPageName (path) {
       return 'blockSigners'
     case path.includes('/address') && path.includes('/transactions'):
       return 'addressDetails'
-    case path.includes('/address') && (path.includes('/token_transfers') || path.includes('/token-transfers')):
+    case path.includes('/address') && path.includes('/token-transfers'):
       return 'addressTokenTransfers'
     case path.includes('/address') && path.includes('/tokens'):
       return 'addressTokens'
-    case path.includes('/address') && (path.includes('/internal_transactions') || path.includes('/internal-transactions')):
+    case path.includes('/address') && path.includes('/internal-transactions'):
       return 'addressInternalTransactions'
-    case path.includes('/address') && (path.includes('/coin_balances') || path.includes('/coin-balances')):
+    case path.includes('/address') && path.includes('/coin-balances'):
       return 'addressCoinHistory'
     case path.includes('/address') && path.includes('/logs'):
       return 'addressLogs'
@@ -102,9 +102,9 @@ function getPageName (path) {
     // TODO: Add rest of contract pages
     case path.includes('/address') && path.includes('/contracts'):
       return 'contractAddressCode'
-    case path.includes('/address') && (path.includes('/read_contract') || path.includes('/read-contract')):
+    case path.includes('/address') && path.includes('/read-contract'):
       return 'readContract'
-    case path.includes('/tx') && (path.includes('/internal_transactions') || path.includes('/internal-transactions')):
+    case path.includes('/tx') && path.includes('/internal-transactions'):
       return 'transactionInternalTransaction'
     case path.includes('/tx') && path.includes('/logs'):
       return 'transactionLogs'
