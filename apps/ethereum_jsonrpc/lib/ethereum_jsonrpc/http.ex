@@ -3,7 +3,7 @@ defmodule EthereumJSONRPC.HTTP do
   JSONRPC over HTTP
   """
 
-  alias EthereumJSONRPC.Transport
+  alias EthereumJSONRPC.{Cache, Transport}
 
   require Logger
 
@@ -21,19 +21,30 @@ defmodule EthereumJSONRPC.HTTP do
   @impl Transport
 
   def json_rpc(%{method: method} = request, options) when is_map(request) do
-    json = encode_json(request)
-    http = Keyword.fetch!(options, :http)
-    url = url(options, method)
-    http_options = Keyword.fetch!(options, :http_options)
-
-    with {:ok, %{body: body, status_code: code}} <- http.json_rpc(url, json, http_options, method),
-         {:ok, json} <- decode_json(request: [url: url, body: json], response: [status_code: code, body: body]) do
-      handle_response(json, code)
+    case Cache.cached_request(request) do
+      {:ok, result} -> result
+      _ -> _do_json_rpc(request, options)
     end
   end
 
   def json_rpc(batch_request, options) when is_list(batch_request) do
     chunked_json_rpc([batch_request], options, [])
+  end
+
+  def _do_json_rpc(%{method: method} = request, options) do
+    json = encode_json(request)
+    http = Keyword.fetch!(options, :http)
+    url = url(options, method)
+    http_options = Keyword.fetch!(options, :http_options)
+
+    if method == "eth_getBlockByNumber" do
+      Logger.info("get block by number #{request |> inspect()}")
+    end
+
+    with {:ok, %{body: body, status_code: code}} <- http.json_rpc(url, json, http_options, method),
+         {:ok, json} <- decode_json(request: [url: url, body: json], response: [status_code: code, body: body]) do
+      handle_response(json, code) |> Cache.store_response(request)
+    end
   end
 
   defp chunked_json_rpc([], _options, decoded_response_bodies) when is_list(decoded_response_bodies) do

@@ -398,6 +398,7 @@ defmodule EthereumJSONRPC do
     transport = Keyword.fetch!(named_arguments, :transport)
     transport_options = Keyword.fetch!(named_arguments, :transport_options)
     throttle_timeout = Keyword.get(named_arguments, :throttle_timeout, @default_throttle_timeout)
+
     RequestCoordinator.perform(request, transport, transport_options, throttle_timeout)
   end
 

@@ -13,19 +13,6 @@ defmodule EthereumJSONRPC.HTTP.HTTPoison do
 
   @impl HTTP
   def json_rpc(url, json, options, method) when is_binary(url) and is_list(options) do
-    case _cached_response(method, options) do
-      {:ok, response} -> response
-      _ -> do_json_rpc(url, json, options, method)
-    end
-  end
-
-  defp _cached_response("eth_getBlockByNumber" = m, options) do
-    Logger.info(" #{m} - #{options |> IO.inspect()}}")
-    false
-  end
-  defp _cached_response(_, _), do: false
-
-  defp do_json_rpc(url, json, options, method) do
     id = UUID.uuid4()
     RpcResponseEts.put(id, %{:method => method, :start => :os.system_time(:millisecond)})
 
