@@ -30,13 +30,18 @@ config :logger_json, :ethereum_jsonrpc,
 
 config :logger, :ethereum_jsonrpc, backends: [LoggerJSON]
 
-# config :logger, :ethereum_jsonrpc,
-#  # keep synced with `config/config.exs`
-#  format: "$dateT$time $metadata[$level] $message\n",
-#  metadata:
-#    ~w(application fetcher request_id first_block_number last_block_number missing_block_range_count missing_block_count
-#       block_number step count error_count shrunk import_id transaction_id)a,
-#  metadata_filter: [application: :ethereum_jsonrpc]
+config :ethereum_jsonrpc, EthereumJSONRPC.Cache,
+       # GC interval for pushing new generation: 12 hrs
+       gc_interval: :timer.hours(12),
+         # Max 1 million entries in cache
+       max_size: 1_000_000,
+         # Max 2 GB of memory
+       allocated_memory: 2_000_000_000,
+         # GC min timeout: 10 sec
+       gc_cleanup_min_timeout: :timer.seconds(10),
+         # GC max timeout: 10 min
+       gc_cleanup_max_timeout: :timer.minutes(10)
+
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
