@@ -17,7 +17,7 @@ defmodule Indexer.Fetcher.EmptyBlocksSanitizer do
   alias Explorer.Chain.{Block, Transaction}
   alias Explorer.Chain.Import.Runner.Blocks
 
-  @interval :timer.seconds(10)
+  @interval :timer.minutes(10)
 
   defstruct interval: @interval,
             json_rpc_named_arguments: []
@@ -56,7 +56,7 @@ defmodule Indexer.Fetcher.EmptyBlocksSanitizer do
         :sanitize_empty_blocks,
         %{interval: interval, json_rpc_named_arguments: json_rpc_named_arguments} = state
       ) do
-    Logger.info("Start sanitizing of empty blocks. Batch size is #{limit()}",
+    Logger.debug("Start sanitizing of empty blocks. Batch size is #{limit()}",
       fetcher: :empty_blocks_to_refetch
     )
 
@@ -113,7 +113,7 @@ defmodule Indexer.Fetcher.EmptyBlocksSanitizer do
       end
     end)
 
-    Logger.info("Batch of empty blocks is sanitized",
+    Logger.debug("Batch of empty blocks is sanitized",
       fetcher: :empty_blocks_to_refetch
     )
   end
