@@ -41,6 +41,7 @@ defmodule Explorer.Application do
 
     # Children to start in all environments
     base_children = [
+      Explorer.Celo.Cache,
       {Fly.RPC, []},
       Explorer.Repo.Local,
       {Fly.Postgres.LSN.Supervisor, repo: Explorer.Repo.Local},

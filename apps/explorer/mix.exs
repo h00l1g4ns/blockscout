@@ -128,7 +128,8 @@ defmodule Explorer.Mixfile do
       {:fly_postgres, github: "clabs-co/fly_postgres_elixir", ref: "32aff46"},
       # Celo: event publishing
       {:elixir_talk, "~> 1.2"},
-      # Celo: caching responses
+      # Celo: application cache
+      {:decorator, "~> 1.4"},
       {:nebulex, "~> 2.4"}
     ]
   end

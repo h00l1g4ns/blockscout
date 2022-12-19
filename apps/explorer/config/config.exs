@@ -123,6 +123,18 @@ config :spandex_ecto, SpandexEcto.EctoLogger,
   tracer: Explorer.Tracer,
   otp_app: :explorer
 
+config :explorer, Explorer.Celo.Cache,
+       # GC interval for pushing new generation: 12 hrs
+       gc_interval: :timer.hours(12),
+         # Max 1 million entries in cache
+       max_size: 1_000_000,
+         # Max 2 GB of memory
+       allocated_memory: 2_000_000_000,
+         # GC min timeout: 10 sec
+       gc_cleanup_min_timeout: :timer.seconds(10),
+         # GC max timeout: 10 min
+       gc_cleanup_max_timeout: :timer.minutes(10)
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
