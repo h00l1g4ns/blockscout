@@ -37,10 +37,6 @@ defmodule EthereumJSONRPC.HTTP do
     url = url(options, method)
     http_options = Keyword.fetch!(options, :http_options)
 
-    if method == "eth_getBlockByNumber" do
-      Logger.info("get block by number #{request |> inspect()}")
-    end
-
     with {:ok, %{body: body, status_code: code}} <- http.json_rpc(url, json, http_options, method),
          {:ok, json} <- decode_json(request: [url: url, body: json], response: [status_code: code, body: body]) do
       handle_response(json, code) |> Cache.store_response(request)
