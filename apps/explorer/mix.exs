@@ -121,11 +121,15 @@ defmodule Explorer.Mixfile do
       {:redix, "~> 1.1"},
       # Log json format
       {:logger_json, "~> 3.2"},
+      # Celo: cli observer for runtime introspection
       {:observer_cli, "~> 1.6"},
       {:phoenix_pubsub, "~> 2.0"},
+      # Celo: distributed postgres
       {:fly_postgres, github: "clabs-co/fly_postgres_elixir", ref: "32aff46"},
-      # event publishing
-      {:elixir_talk, "~> 1.2"}
+      # Celo: event publishing
+      {:elixir_talk, "~> 1.2"},
+      # Celo: caching responses
+      {:nebulex, "~> 2.4"}
     ]
   end
 
