@@ -4,7 +4,7 @@ defmodule Explorer.Celo.CoreContracts do
   """
 
   use GenServer
-  alias Explorer.Celo.{AbiHandler, AddressCache}
+  alias Explorer.Celo.{AbiHandler, AddressCache, Cache}
   alias Explorer.Chain.CeloCoreContract
   alias Explorer.Repo
   alias Explorer.SmartContract.Reader
@@ -202,6 +202,7 @@ defmodule Explorer.Celo.CoreContracts do
   def contract_address("Registry"), do: @registry_address
 
   @impl AddressCache
+  @decorate cacheable(cache: Cache, key: {__MODULE__, :address, name})
   def contract_address(name), do: GenServer.call(__MODULE__, {:get_address, name})
 
   @impl AddressCache
