@@ -49,14 +49,12 @@ defmodule Explorer.Celo.CoreContracts do
           %{}
       end
 
-    cache = initial_env_cache |> Map.merge(params[:cache] || %{})
+    Cache.put(address_set_key, MapSet.new())
 
     period = params[:refresh_period] || Application.get_env(:explorer, Explorer.Celo.CoreContracts)[:refresh]
     timer = Process.send_after(self(), :refresh, period)
 
-    state =
-      %{cache: cache, timer: timer}
-      |> rebuild_state()
+    state = %{timer: timer}
 
     {:ok, state, {:continue, :fetch_contracts_from_db}}
   end
@@ -153,9 +151,8 @@ defmodule Explorer.Celo.CoreContracts do
 
     # schedule next refresh
     timer = Process.send_after(self(), :refresh, refresh_period)
-    state_with_new_timer = %{cache: cache, timer: timer} |> rebuild_state()
 
-    {:noreply, state_with_new_timer}
+    {:noreply, %{timer: timer}}
   end
 
   def handle_info({:update, name, address}, state) do
@@ -207,7 +204,10 @@ defmodule Explorer.Celo.CoreContracts do
 
   @impl AddressCache
   def update_cache(name, address) do
-    send(__MODULE__, {:update, name, address})
+    Cache.put(address_key(name), address)
+    Cache.get_and_update(address_set_key(), fn address_set ->
+      MapSet.put(address_set, address)
+    end)
   end
 
   @doc """
@@ -224,18 +224,15 @@ defmodule Explorer.Celo.CoreContracts do
 
   @impl AddressCache
   def is_core_contract_address?(address) do
-    GenServer.call(__MODULE__, {:has_address, address})
+    case Cache.get(address_set_key) do
+      nil -> false
+      set -> MapSet.member?(set, address)
+    end
   end
 
   @doc "Ensure that db contains all known entries for contract cache"
   def assert_db_entries do
     GenServer.cast(__MODULE__, :insert_entries_to_db)
-  end
-
-  defp rebuild_state(%{cache: cache, timer: timer}) do
-    address_set = cache |> Map.values() |> MapSet.new()
-
-    %{cache: cache, address_set: address_set, timer: timer}
   end
 
   # Directly query celo blockchain registry contract for core contract addresses
@@ -364,4 +361,7 @@ defmodule Explorer.Celo.CoreContracts do
       "Validators" => "0x9acf2a99914e083ad0d610672e93d14b0736bbcc"
     }
   end
+
+  defp address_key(name), do: {__MODULE__, :address, name}
+  defp address_set_key, do: {__MODULE__, :address_set}
 end
