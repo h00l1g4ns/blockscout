@@ -33,6 +33,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y cargo autoconf libtool libgmp-dev
+          sudo apt install -y nodejs npm
 
       - name: "ELIXIR_VERSION.lock"
         run: echo "${ELIXIR_VERSION}" > ELIXIR_VERSION.lock
