@@ -51,11 +51,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ env.ELIXIR_VERSION }}-${{ env.OTP_VERSION }}-${{ env.MIX_ENV }}-deps-
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
-        with:
-          limit-access-to-actor: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      #   timeout-minutes: 15
+      #   with:
+      #     limit-access-to-actor: true
 
       - name: Conditionally build Mix deps cache
         if: steps.deps-cache.outputs.cache-hit != 'true'
@@ -68,7 +68,7 @@ jobs:
           make
 
       - name: Restore Explorer NPM Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: explorer-npm-cache
         with:
           path: apps/explorer/node_modules
