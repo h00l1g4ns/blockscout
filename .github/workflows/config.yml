@@ -393,6 +393,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ env.ELIXIR_VERSION }}-${{ env.OTP_VERSION }}-${{ env.MIX_ENV }}-deps-"
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
+        with:
+          limit-access-to-actor: true
       - run: ./bin/install_chrome_headless.sh
       - name: mix test --exclude no_nethermind
         run: |
@@ -593,7 +598,6 @@ jobs:
           elixir-version: ${{ env.ELIXIR_VERSION }}
       - run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
       - run: echo 'export PATH=~/.cargo/bin/:$PATH' >> $GITHUB_ENV
-      - run: apt update && apt-get install -y chromium-chromedriver 
 
       - name: Mix Deps Cache
         uses: actions/cache@v2
