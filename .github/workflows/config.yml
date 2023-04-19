@@ -593,6 +593,7 @@ jobs:
           elixir-version: ${{ env.ELIXIR_VERSION }}
       - run: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
       - run: echo 'export PATH=~/.cargo/bin/:$PATH' >> $GITHUB_ENV
+      - run: apt update && apt-get install -y chromium-chromedriver 
 
       - name: Mix Deps Cache
         uses: actions/cache@v2
@@ -604,7 +605,6 @@ jobs:
           key: ${{ runner.os }}-${{ env.ELIXIR_VERSION }}-${{ env.OTP_VERSION }}-${{ env.MIX_ENV }}-deps-mixlockhash_${{ env.CACHE_VERSION }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ env.ELIXIR_VERSION }}-${{ env.OTP_VERSION }}-${{ env.MIX_ENV }}-deps-"
-
 
       - name: Restore Explorer NPM Cache
         uses: actions/cache@v2
