@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y cargo autoconf libtool
+          sudo apt install -y cargo autoconf libtool libinput libgbm-dev
 
       - name: "ELIXIR_VERSION.lock"
         run: echo "${ELIXIR_VERSION}" > ELIXIR_VERSION.lock
