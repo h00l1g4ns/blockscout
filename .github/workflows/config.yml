@@ -29,10 +29,10 @@ jobs:
           otp-version: ${{ env.OTP_VERSION }}
           elixir-version: ${{ env.ELIXIR_VERSION }}
 
-      - name: Install RustC and Cargo
+      - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y cargo
+          sudo apt install -y cargo autoconf
 
       - name: "ELIXIR_VERSION.lock"
         run: echo "${ELIXIR_VERSION}" > ELIXIR_VERSION.lock
