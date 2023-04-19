@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - jcortejoso/test-runners
   pull_request:
     branches:
       - master
