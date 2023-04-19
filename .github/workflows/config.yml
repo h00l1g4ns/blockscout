@@ -618,11 +618,11 @@ jobs:
       - run: ./bin/install_chrome_headless.sh
       - run: echo 'export PATH=/usr/local/bin:$PATH' >> $GITHUB_ENV
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
-        with:
-          limit-access-to-actor: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      #   timeout-minutes: 15
+      #   with:
+      #     limit-access-to-actor: true
 
       - name: mix test --exclude no_nethermind
         run: |
