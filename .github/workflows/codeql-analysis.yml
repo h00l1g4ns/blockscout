@@ -28,9 +28,7 @@ jobs:
     name: Analyze
     runs-on: self-hosted
     container:
-      image: ubuntu:22.04
-      env:
-        ImageOS: ubuntu22
+      image: node:18
     permissions:
       actions: read
       contents: read
