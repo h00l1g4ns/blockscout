@@ -22,21 +22,8 @@ jobs:
   build-and-cache:
     name: Build and Cache deps
     runs-on: self-hosted
-    container:
-      image: ubuntu:22.04
-      env:
-        ImageOS: ubuntu22
     steps:
       - uses: actions/checkout@v3
-
-      # Speed up your github actions on ubuntu-latest
-      - name: Run  github-actions-tune
-        uses: abbbi/github-actions-tune@v1
-
-      - name: Refresh Ubuntu Packages
-        run: sudo apt-fast -y update
-      - name: Install Dependencies
-        run: sudo apt-fast install -y wget curl locales cargo autoconf libtool libgmp-dev
 
       - uses: erlef/setup-beam@v1
         with:

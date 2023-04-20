@@ -27,8 +27,6 @@ jobs:
   analyze:
     name: Analyze
     runs-on: self-hosted
-    container:
-      image: node:18
     permissions:
       actions: read
       contents: read
