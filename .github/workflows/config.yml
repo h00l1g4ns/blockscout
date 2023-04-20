@@ -783,4 +783,3 @@ jobs:
       trivy: true
       trivy-timeout: 20m
 
-
