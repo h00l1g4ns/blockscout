@@ -27,13 +27,17 @@ jobs:
       env:
         ImageOS: ubuntu22
     steps:
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        name: Install apt dependencies
-        with:
-          packages: wget curl locales cargo autoconf libtool libgmp-dev
-          version: 1.0
+      - uses: actions/checkout@v3
 
-      - uses: actions/checkout@v2
+      # Speed up your github actions on ubuntu-latest
+      - name: Run  github-actions-tune
+        uses: abbbi/github-actions-tune@v1
+
+      - name: Refresh Ubuntu Packages
+        run: sudo apt-fast -y update
+      - name: Install Dependencies
+        run: sudo apt-fast install -y wget curl locales cargo autoconf libtool libgmp-dev
+
       - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ env.OTP_VERSION }}
