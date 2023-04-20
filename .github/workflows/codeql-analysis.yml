@@ -27,6 +27,8 @@ jobs:
   analyze:
     name: Analyze
     runs-on: self-hosted
+    container:
+      image: ubuntu:latest
     permissions:
       actions: read
       contents: read
