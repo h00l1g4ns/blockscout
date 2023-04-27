@@ -5,9 +5,14 @@ on:
     branches:
       - master
       - jcortejoso/test-runners
+
   pull_request:
     branches:
       - master
+
+concurrency:
+  group: config-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   MIX_ENV: test
