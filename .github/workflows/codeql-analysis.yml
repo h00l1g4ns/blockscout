@@ -29,7 +29,7 @@ concurrency:
 jobs:
   analyze:
     name: Analyze
-    runs-on: self-hosted
+    runs-on: [self-hosted, blockscout]
     permissions:
       actions: read
       contents: read
