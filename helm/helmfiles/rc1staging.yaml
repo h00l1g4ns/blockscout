@@ -6,6 +6,7 @@ releases:
     createNamespace: false
     namespace: rc1staging
     missingFileHandler: Error
+    timeout: 86400 # 1 day
     values:
       - ../values/values-rc1staging-blockscout.yaml
       - changeCause: {{ env "CHANGE_CAUSE" }}
