@@ -5,9 +5,7 @@ defmodule Explorer.Application do
 
   use Application
 
-  alias Explorer.Admin
-
-  alias Explorer.Celo.Events.ContractEventStream
+  alias Explorer.{Admin, TokenTransferTokenIdMigration}
 
   alias Explorer.Chain.Cache.{
     Accounts,
@@ -19,7 +17,9 @@ defmodule Explorer.Application do
     GasPriceOracle,
     MinMissingBlockNumber,
     NetVersion,
+    Transaction,
     Transactions,
+    TransactionsApiV2,
     Uncles
   }
 
@@ -45,6 +45,7 @@ defmodule Explorer.Application do
       Explorer.SmartContract.VyperDownloader,
       {Registry, keys: :duplicate, name: Registry.ChainEvents, id: Registry.ChainEvents},
       {Admin.Recovery, [[], [name: Admin.Recovery]]},
+      Transaction,
       AddressSum,
       AddressSumMinusBurnt,
       Block,
@@ -55,6 +56,7 @@ defmodule Explorer.Application do
       con_cache_child_spec(MarketHistoryCache.cache_name()),
       con_cache_child_spec(RSK.cache_name(), ttl_check_interval: :timer.minutes(1), global_ttl: :timer.minutes(30)),
       Transactions,
+      TransactionsApiV2,
       Accounts,
       Uncles,
       Supervisor.child_spec({Phoenix.PubSub, name: :chain_pubsub}, id: :chain_pubsub),
@@ -74,21 +76,7 @@ defmodule Explorer.Application do
       configure(Explorer.ExchangeRates),
       configure(Explorer.ChainSpec.GenesisData),
       configure(Explorer.KnownTokens),
-      configure(Explorer.Market.History.Cataloger),
-      configure(Explorer.Chain.Cache.TokenExchangeRate),
-      configure(Explorer.Chain.Transaction.History.Historian),
       configure(Explorer.Chain.Events.Listener),
-      configure(Explorer.Counters.AddressesWithBalanceCounter),
-      configure(Explorer.Counters.AddressesCounter),
-      configure(Explorer.Counters.AddressTransactionsCounter),
-      configure(Explorer.Counters.AddressTokenTransfersCounter),
-      configure(Explorer.Counters.AddressTransactionsGasUsageCounter),
-      configure(Explorer.Counters.AddressTokenUsdSum),
-      configure(Explorer.Counters.TokenHoldersCounter),
-      configure(Explorer.Counters.TokenTransfersCounter),
-      configure(Explorer.Counters.BlockBurnedFeeCounter),
-      configure(Explorer.Counters.BlockPriorityFeeCounter),
-      configure(Explorer.Counters.AverageBlockTime),
       configure(Explorer.Celo.AbiHandler),
       configure(Explorer.Celo.CoreContracts),
       configure(Explorer.Celo.SignerCache),
@@ -96,9 +84,39 @@ defmodule Explorer.Application do
       configure(Explorer.Validator.MetadataProcessor),
       configure(Explorer.Tags.AddressTag.Cataloger),
       configure(MinMissingBlockNumber),
-      configure(ContractEventStream)
+      configure(TokenTransferTokenIdMigration.Supervisor)
     ]
+    |> Enum.concat(children_with_write_access())
     |> List.flatten()
+  end
+
+  # child processes which write to the db after being added to the supervision tree (e.g. periodic caches, counters, etc)
+  # these cause noisy failures when connected to replica db
+  defp children_with_write_access do
+    if System.get_env("DISABLE_DB_WRITE", nil) == nil do
+      [
+        configure(Explorer.Market.History.Cataloger),
+        configure(Explorer.Chain.Cache.TokenExchangeRate),
+        configure(Explorer.Chain.Cache.ContractsCounter),
+        configure(Explorer.Chain.Cache.NewContractsCounter),
+        configure(Explorer.Chain.Cache.VerifiedContractsCounter),
+        configure(Explorer.Chain.Cache.NewVerifiedContractsCounter),
+        configure(Explorer.Chain.Transaction.History.Historian),
+        configure(Explorer.Counters.AddressesWithBalanceCounter),
+        configure(Explorer.Counters.AddressesCounter),
+        configure(Explorer.Counters.AddressTransactionsCounter),
+        configure(Explorer.Counters.AddressTokenTransfersCounter),
+        configure(Explorer.Counters.AddressTransactionsGasUsageCounter),
+        configure(Explorer.Counters.AddressTokenUsdSum),
+        configure(Explorer.Counters.TokenHoldersCounter),
+        configure(Explorer.Counters.TokenTransfersCounter),
+        configure(Explorer.Counters.BlockBurnedFeeCounter),
+        configure(Explorer.Counters.BlockPriorityFeeCounter),
+        configure(Explorer.Counters.AverageBlockTime)
+      ]
+    else
+      []
+    end
   end
 
   defp should_start?(process) do
