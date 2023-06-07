@@ -5,25 +5,32 @@ defmodule BlockScoutWeb.AddressInternalTransactionController do
 
   use BlockScoutWeb, :controller
 
+  import BlockScoutWeb.Account.AuthController, only: [current_user: 1]
   import BlockScoutWeb.Chain, only: [current_filter: 1, paging_options: 1, next_page_params: 3, split_list_by_page: 1]
+  import BlockScoutWeb.Models.GetAddressTags, only: [get_address_tags: 2]
 
   alias BlockScoutWeb.{AccessHelpers, Controller, InternalTransactionView}
+  alias Explorer.Celo.EpochUtil
   alias Explorer.{Chain, Market}
-  alias Explorer.Chain.Address
+  alias Explorer.Chain.{Address, Wei}
   alias Explorer.ExchangeRates.Token
   alias Indexer.Fetcher.CoinBalanceOnDemand
   alias Phoenix.View
 
   def index(conn, %{"address_id" => address_hash_string, "type" => "JSON"} = params) do
     with {:ok, address_hash} <- Chain.string_to_address_hash(address_hash_string),
-         {:ok, address} <- Chain.hash_to_address(address_hash, [], false),
+         {:ok, address} <-
+           Chain.hash_to_address(address_hash, [necessity_by_association: %{:smart_contract => :optional}], false),
          {:ok, false} <- AccessHelpers.restricted_access?(address_hash_string, params) do
       full_options =
         [
           necessity_by_association: %{
             [created_contract_address: :names] => :optional,
             [from_address: :names] => :optional,
-            [to_address: :names] => :optional
+            [to_address: :names] => :optional,
+            [created_contract_address: :smart_contract] => :optional,
+            [from_address: :smart_contract] => :optional,
+            [to_address: :smart_contract] => :optional
           }
         ]
         |> Keyword.merge(paging_options(params))
@@ -82,7 +89,9 @@ defmodule BlockScoutWeb.AddressInternalTransactionController do
         current_path: Controller.current_full_path(conn),
         exchange_rate: Market.get_exchange_rate(Explorer.coin()) || Token.null(),
         filter: params["filter"],
-        counters_path: address_path(conn, :address_counters, %{"id" => address_hash_string})
+        counters_path: address_path(conn, :address_counters, %{"id" => address_hash_string}),
+        tags: get_address_tags(address_hash, current_user(conn)),
+        celo_epoch: EpochUtil.get_address_summary(address)
       )
     else
       {:restricted_access, _} ->
@@ -90,7 +99,13 @@ defmodule BlockScoutWeb.AddressInternalTransactionController do
 
       {:error, :not_found} ->
         {:ok, address_hash} = Chain.string_to_address_hash(address_hash_string)
-        address = %Chain.Address{hash: address_hash, smart_contract: nil, token: nil}
+
+        address = %Chain.Address{
+          hash: address_hash,
+          smart_contract: nil,
+          token: nil,
+          fetched_coin_balance: %Wei{value: Decimal.new(0)}
+        }
 
         case Chain.Hash.Address.validate(address_hash_string) do
           {:ok, _} ->
@@ -102,7 +117,9 @@ defmodule BlockScoutWeb.AddressInternalTransactionController do
               coin_balance_status: nil,
               exchange_rate: Market.get_exchange_rate(Explorer.coin()) || Token.null(),
               counters_path: address_path(conn, :address_counters, %{"id" => Address.checksum(address_hash)}),
-              current_path: Controller.current_full_path(conn)
+              current_path: Controller.current_full_path(conn),
+              tags: get_address_tags(address_hash, current_user(conn)),
+              celo_epoch: EpochUtil.get_address_summary(address)
             )
 
           _ ->

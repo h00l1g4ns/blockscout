@@ -22,28 +22,15 @@ defmodule Indexer.Fetcher.InternalTransaction do
 
   use BufferedTask
 
-  @max_batch_size 3
-  @max_concurrency 55
-  @defaults [
-    flush_interval: :timer.seconds(3),
-    poll_interval: :timer.seconds(3),
-    max_concurrency: @max_concurrency,
-    max_batch_size: @max_batch_size,
-    dedup_entries: true,
-    poll: true,
-    task_supervisor: Indexer.Fetcher.InternalTransaction.TaskSupervisor,
-    metadata: [fetcher: :internal_transaction]
-  ]
-
   @doc """
   Asynchronously fetches internal transactions.
   ## Limiting Upstream Load
   Internal transactions are an expensive upstream operation. The number of
   results to fetch is configured by `@max_batch_size` and represents the number
   of transaction hashes to request internal transactions in a single JSONRPC
-  request. Defaults to `#{@max_batch_size}`.
+  request.
   The `@max_concurrency` attribute configures the  number of concurrent requests
-  of `@max_batch_size` to allow against the JSONRPC. Defaults to `#{@max_concurrency}`.
+  of `@max_batch_size` to allow against the JSONRPC.
   *Note*: The internal transactions for individual transactions cannot be paginated,
   so the total number of internal transactions that could be produced is unknown.
   """
@@ -67,7 +54,7 @@ defmodule Indexer.Fetcher.InternalTransaction do
     end
 
     merged_init_opts =
-      @defaults
+      defaults()
       |> Keyword.merge(mergeable_init_options)
       |> Keyword.put(:state, state)
 
@@ -93,24 +80,28 @@ defmodule Indexer.Fetcher.InternalTransaction do
             )
   def run(block_numbers, json_rpc_named_arguments) do
     unique_numbers = Enum.uniq(block_numbers)
+    filtered_unique_numbers = EthereumJSONRPC.block_numbers_in_range(unique_numbers)
 
-    unique_numbers_count = Enum.count(unique_numbers)
-    Logger.metadata(count: unique_numbers_count)
+    filtered_unique_numbers_count = Enum.count(filtered_unique_numbers)
+    Logger.metadata(count: filtered_unique_numbers_count)
 
     Logger.debug("fetching internal transactions for blocks")
 
     json_rpc_named_arguments
     |> Keyword.fetch!(:variant)
     |> case do
-      EthereumJSONRPC.Parity ->
-        EthereumJSONRPC.fetch_block_internal_transactions(unique_numbers, json_rpc_named_arguments)
+      EthereumJSONRPC.Nethermind ->
+        EthereumJSONRPC.fetch_block_internal_transactions(filtered_unique_numbers, json_rpc_named_arguments)
+
+      EthereumJSONRPC.Erigon ->
+        EthereumJSONRPC.fetch_block_internal_transactions(filtered_unique_numbers, json_rpc_named_arguments)
 
       EthereumJSONRPC.Besu ->
-        EthereumJSONRPC.fetch_block_internal_transactions(unique_numbers, json_rpc_named_arguments)
+        EthereumJSONRPC.fetch_block_internal_transactions(filtered_unique_numbers, json_rpc_named_arguments)
 
       _jsonrpc_variant ->
         try do
-          fetch_block_internal_transactions_by_transactions(unique_numbers, json_rpc_named_arguments)
+          fetch_block_internal_transactions_by_transactions(filtered_unique_numbers, json_rpc_named_arguments)
         rescue
           error ->
             {:error, error}
@@ -118,14 +109,14 @@ defmodule Indexer.Fetcher.InternalTransaction do
     end
     |> case do
       {:ok, internal_transactions_params} ->
-        import_internal_transaction(internal_transactions_params, unique_numbers)
+        import_internal_transaction(internal_transactions_params, filtered_unique_numbers)
 
       {:error, reason} ->
-        block_numbers = unique_numbers |> inspect(charlists: :as_lists)
+        block_numbers = filtered_unique_numbers |> inspect(charlists: :as_lists)
 
         Logger.error(
-          "failed to fetch internal transactions for #{unique_numbers_count} blocks: #{block_numbers} reason: #{inspect(reason)}",
-          error_count: unique_numbers_count
+          "failed to fetch internal transactions for #{filtered_unique_numbers_count} blocks: #{block_numbers} reason: #{inspect(reason)}",
+          error_count: filtered_unique_numbers
         )
 
         :ok
@@ -240,26 +231,6 @@ defmodule Indexer.Fetcher.InternalTransaction do
     Enum.map(internal_transactions, fn a -> Map.put(a, :block_hash, block_hash) end)
   end
 
-  defp decode("0x" <> str) do
-    %{bytes: Base.decode16!(str, case: :mixed)}
-  end
-
-  defp add_gold_token_balances(gold_token, addresses, acc) do
-    Enum.reduce(addresses, acc, fn
-      %{fetched_coin_balance_block_number: bn, hash: hash}, acc ->
-        MapSet.put(acc, %{
-          address_hash: decode(hash),
-          token_contract_address_hash: decode(gold_token),
-          block_number: bn,
-          token_type: "ERC-20",
-          token_id: nil
-        })
-
-      _, acc ->
-        acc
-    end)
-  end
-
   defp import_internal_transaction(internal_transactions_params, unique_numbers) do
     internal_transactions_params_without_failed_creations = remove_failed_creations(internal_transactions_params)
 
@@ -268,20 +239,12 @@ defmodule Indexer.Fetcher.InternalTransaction do
         internal_transactions: internal_transactions_params_without_failed_creations
       })
 
-    # Gold token special updates
-    token_transfers =
-      with true <- Application.get_env(:indexer, Indexer.Block.Fetcher, [])[:enable_gold_token],
-           {:ok, gold_token} <- Util.get_address("GoldToken") do
-        set = add_gold_token_balances(gold_token, addresses_params, MapSet.new())
-        TokenBalance.async_fetch(MapSet.to_list(set))
+    # Enqueue fetching of celo balances for addresses referenced in itx
+    {:ok, gold_token} = Util.get_address("GoldToken")
+    fetch_celo_balances_for(addresses_params, gold_token)
 
-        %{token_transfers: celo_token_transfers} =
-          TokenTransfers.parse_itx(internal_transactions_params_without_failed_creations, gold_token)
-
-        celo_token_transfers
-      else
-        _ -> []
-      end
+    %{token_transfers: token_transfers} =
+      TokenTransfers.parse_itx(internal_transactions_params_without_failed_creations, gold_token)
 
     token_transfers_addresses_params =
       Addresses.extract_addresses(%{
@@ -336,6 +299,33 @@ defmodule Indexer.Fetcher.InternalTransaction do
     end
   end
 
+  defp decode("0x" <> str) do
+    %{bytes: Base.decode16!(str, case: :mixed)}
+  end
+
+  defp add_gold_token_balances(addresses, gold_token, acc) do
+    Enum.reduce(addresses, acc, fn
+      %{fetched_coin_balance_block_number: bn, hash: hash}, acc ->
+        MapSet.put(acc, %{
+          address_hash: decode(hash),
+          token_contract_address_hash: decode(gold_token),
+          block_number: bn,
+          token_type: "ERC-20",
+          token_id: nil
+        })
+
+      _, acc ->
+        acc
+    end)
+  end
+
+  defp fetch_celo_balances_for(addresses, gold_token) do
+    addresses
+    |> add_gold_token_balances(gold_token, MapSet.new())
+    |> MapSet.to_list()
+    |> TokenBalance.async_fetch()
+  end
+
   defp remove_failed_creations(internal_transactions_params) do
     internal_transactions_params
     |> Enum.map(fn internal_transaction_param ->
@@ -362,5 +352,18 @@ defmodule Indexer.Fetcher.InternalTransaction do
         internal_transaction_param
       end
     end)
+  end
+
+  defp defaults do
+    [
+      flush_interval: :timer.seconds(3),
+      poll_interval: :timer.seconds(3),
+      max_concurrency: Application.get_env(:indexer, __MODULE__)[:concurrency],
+      max_batch_size: Application.get_env(:indexer, __MODULE__)[:batch_size],
+      poll: true,
+      dedup_entries: true,
+      task_supervisor: Indexer.Fetcher.InternalTransaction.TaskSupervisor,
+      metadata: [fetcher: :internal_transaction]
+    ]
   end
 end

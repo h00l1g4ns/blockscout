@@ -58,7 +58,7 @@ defmodule Explorer.Chain.Import.Runner.TokenTransfers do
     # ordered_changes_list = Enum.sort_by(changes_list, &{&1.transaction_hash, &1.block_hash, &1.log_index})
     ordered_changes_list = Enum.sort_by(changes_list, &{&1.block_hash, &1.log_index})
 
-    {:ok, _} =
+    {:ok, inserted} =
       Import.insert_changes_list(
         repo,
         ordered_changes_list,
@@ -69,6 +69,8 @@ defmodule Explorer.Chain.Import.Runner.TokenTransfers do
         timeout: timeout,
         timestamps: timestamps
       )
+
+    {:ok, inserted}
   end
 
   defp default_on_conflict do
@@ -83,22 +85,19 @@ defmodule Explorer.Chain.Import.Runner.TokenTransfers do
           to_address_hash: fragment("EXCLUDED.to_address_hash"),
           transaction_hash: fragment("EXCLUDED.transaction_hash"),
           token_contract_address_hash: fragment("EXCLUDED.token_contract_address_hash"),
-          token_id: fragment("EXCLUDED.token_id"),
+          token_ids: fragment("EXCLUDED.token_ids"),
           inserted_at: fragment("LEAST(?, EXCLUDED.inserted_at)", token_transfer.inserted_at),
           updated_at: fragment("GREATEST(?, EXCLUDED.updated_at)", token_transfer.updated_at)
         ]
       ],
       where:
         fragment(
-          # "(EXCLUDED.amount, EXCLUDED.from_address_hash, EXCLUDED.to_address_hash, EXCLUDED.token_contract_address_hash, EXCLUDED.token_id) IS DISTINCT FROM (?, ? ,? , ?, ?)",
-          "(EXCLUDED.amount, EXCLUDED.from_address_hash, EXCLUDED.to_address_hash, EXCLUDED.token_contract_address_hash, EXCLUDED.token_id, EXCLUDED.transaction_hash) IS DISTINCT FROM (?, ? ,? , ?, ?, ?)",
+          "(EXCLUDED.amount, EXCLUDED.from_address_hash, EXCLUDED.to_address_hash, EXCLUDED.token_contract_address_hash, EXCLUDED.token_ids) IS DISTINCT FROM (?, ? ,? , ?, ?)",
           token_transfer.amount,
           token_transfer.from_address_hash,
           token_transfer.to_address_hash,
           token_transfer.token_contract_address_hash,
-          # ,
-          token_transfer.token_id,
-          token_transfer.transaction_hash
+          token_transfer.token_ids
         )
     )
   end

@@ -31,15 +31,34 @@
         background: #153550;
         color: #fff;
     }
-    &.bridged {
-        background: #70aee3;
-        color: #fff;
-    }
-    &.validator {
+    &.validator,
+    &.validator-group,
+    &.validator-signer {
         background: $primary;
         color: #fff;
     }
-    &.reward {
+    &.eoa {
+      background: #007bff;
+      color: #fff;
+    }
+    &.contract {
+      background: #923dc3;
+      color: #fff;
+    }
+    &.proxy {
+      background: #2a9e51;
+      color: #fff;
+    }
+    &.black-hole {
+      background: #000;
+      color: #fff;
+    }
+    &.token {
+      background: #5d26c4;
+      color: #fff;
+    }
+    &.reward,
+    &.epoch-number {
         background: $primary;
         color: #fff;
         width: fit-content;
@@ -100,4 +119,10 @@
     border-top: .8rem solid transparent;
     border-bottom: .8rem solid transparent;
     border-left: .8rem solid rgba(245, 246, 250, 1);
+}
+
+.testnet-label {
+    background-color: transparent;
+    border: 1px solid #828ba0;
+    color: #828ba0;
 }

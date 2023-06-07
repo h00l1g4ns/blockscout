@@ -7,7 +7,8 @@ defmodule Explorer.Etherscan.Contracts do
 
   import Ecto.Query,
     only: [
-      from: 2
+      from: 2,
+      where: 3
     ]
 
   alias Explorer.{Chain, Repo}
@@ -73,12 +74,15 @@ defmodule Explorer.Etherscan.Contracts do
 
   def append_proxy_info(%Address{smart_contract: smart_contract} = address) when not is_nil(smart_contract) do
     updated_smart_contract =
-      if Chain.proxy_contract?(address.hash, smart_contract.abi) do
+      if SmartContract.proxy_contract?(smart_contract) do
         smart_contract
         |> Map.put(:is_proxy, true)
         |> Map.put(
           :implementation_address_hash_string,
-          Chain.get_implementation_address_hash(address.hash, smart_contract.abi)
+          smart_contract
+          |> SmartContract.get_implementation_address_hash()
+          |> Tuple.to_list()
+          |> List.first()
         )
       else
         smart_contract
@@ -91,7 +95,7 @@ defmodule Explorer.Etherscan.Contracts do
 
   def append_proxy_info(address), do: address
 
-  def list_verified_contracts(limit, offset) do
+  def list_verified_contracts(limit, offset, opts) do
     query =
       from(
         smart_contract in SmartContract,
@@ -101,7 +105,29 @@ defmodule Explorer.Etherscan.Contracts do
         preload: [:address]
       )
 
-    query
+    verified_at_start_timestamp_exist? = Map.has_key?(opts, :verified_at_start_timestamp)
+    verified_at_end_timestamp_exist? = Map.has_key?(opts, :verified_at_end_timestamp)
+
+    query_in_timestamp_range =
+      cond do
+        verified_at_start_timestamp_exist? && verified_at_end_timestamp_exist? ->
+          query
+          |> where([smart_contract], smart_contract.inserted_at >= ^opts.verified_at_start_timestamp)
+          |> where([smart_contract], smart_contract.inserted_at < ^opts.verified_at_end_timestamp)
+
+        verified_at_start_timestamp_exist? ->
+          query
+          |> where([smart_contract], smart_contract.inserted_at >= ^opts.verified_at_start_timestamp)
+
+        verified_at_end_timestamp_exist? ->
+          query
+          |> where([smart_contract], smart_contract.inserted_at < ^opts.verified_at_end_timestamp)
+
+        true ->
+          query
+      end
+
+    query_in_timestamp_range
     |> Repo.replica().all()
     |> Enum.map(fn smart_contract ->
       Map.put(smart_contract.address, :smart_contract, smart_contract)

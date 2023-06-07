@@ -4,10 +4,14 @@ defmodule Explorer.Chain.Import do
   """
 
   alias Ecto.Changeset
+  alias Explorer.Account.Notify
   alias Explorer.Celo.Telemetry
+  alias Explorer.Celo.Telemetry.Helper, as: TelemetryHelper
   alias Explorer.Chain.Events.Publisher
   alias Explorer.Chain.Import
   alias Explorer.Repo
+
+  require Logger
 
   @stages [
     Import.Stage.Addresses,
@@ -128,6 +132,7 @@ defmodule Explorer.Chain.Import do
          {:ok, runner_to_changes_list} <- runner_to_changes_list(valid_runner_option_pairs),
          {:ok, data} <- insert_runner_to_changes_list(runner_to_changes_list, options) do
       emit_ingestion_metrics(data)
+      Notify.async(data[:transactions])
       Publisher.broadcast(data, Map.get(options, :broadcast, false))
       {:ok, data}
     end
@@ -144,7 +149,13 @@ defmodule Explorer.Chain.Import do
       _, acc ->
         acc
     end)
-    |> then(&Telemetry.event(:ingested, &1))
+    |> TelemetryHelper.filter_imports()
+    |> then(fn imports ->
+      imports
+      |> Enum.each(fn {primitive, import_count} ->
+        Telemetry.event(:ingested, %{count: import_count}, %{type: primitive})
+      end)
+    end)
   end
 
   defp runner_to_changes_list(runner_options_pairs) when is_list(runner_options_pairs) do
@@ -247,7 +258,7 @@ defmodule Explorer.Chain.Import do
 
     runner_specific_options =
       if Map.has_key?(Enum.into(runner.__info__(:functions), %{}), :runner_specific_options) do
-        apply(runner, :runner_specific_options, [])
+        runner.runner_specific_options()
       else
         []
       end

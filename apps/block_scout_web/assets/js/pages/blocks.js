@@ -35,6 +35,9 @@ function baseReducer (state = initialState, action) {
 
       if (state.items.length && blockNumber < minBlock) return state
 
+      // celo: deactivating live block updates on /blocks page
+      if (state.items.length > 0) return state
+
       return Object.assign({}, state, {
         items: [action.msg.blockHtml, ...state.items]
       })
@@ -71,6 +74,7 @@ function withMissingBlocks (reducer) {
     const blockNumbers = keys(blockNumbersToItems).map(x => parseInt(x, 10))
     const minBlock = min(blockNumbers)
     const maxBlock = max(blockNumbers)
+    if (maxBlock - minBlock > 100) return result
 
     return Object.assign({}, result, {
       items: rangeRight(minBlock, maxBlock + 1)
@@ -80,14 +84,14 @@ function withMissingBlocks (reducer) {
 }
 
 const $blockListPage = $('[data-page="block-list"]')
-const $uncleListPage = $('[data-page="uncle-list"]')
-const $reorgListPage = $('[data-page="reorg-list"]')
-if ($blockListPage.length || $uncleListPage.length || $reorgListPage.length) {
+const $epochListPage = $('[data-page="epoch-list"]')
+
+if ($blockListPage.length || $epochListPage.length) {
   window.onbeforeunload = () => {
     window.loading = true
   }
 
-  const blockType = $blockListPage.length ? 'block' : $uncleListPage.length ? 'uncle' : 'reorg'
+  const blockType = $epochListPage.length ? 'epoch' : 'block'
 
   const store = createAsyncLoadStore(
     $blockListPage.length ? blockReducer : baseReducer,

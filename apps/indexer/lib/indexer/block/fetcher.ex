@@ -14,7 +14,7 @@ defmodule Indexer.Block.Fetcher do
   alias Explorer.Celo.ContractEvents.Registry.RegistryUpdatedEvent
   alias Explorer.Celo.{AddressCache, CoreContracts}
   alias Explorer.{Chain, Market}
-  alias Explorer.Chain.{Address, Block, Hash, Import, Transaction}
+  alias Explorer.Chain.{Address, Block, Hash, Import, Transaction, Wei}
   alias Explorer.Chain.Block.Reward
   alias Explorer.Chain.Cache.Blocks, as: BlocksCache
   alias Explorer.Chain.Cache.{Accounts, BlockNumber, Transactions, Uncles}
@@ -164,51 +164,11 @@ defmodule Indexer.Block.Fetcher do
     end)
   end
 
-  defp add_celo_token_balances(celo_token, addresses, acc) do
-    Enum.reduce(addresses, acc, fn
-      %{fetched_coin_balance_block_number: bn, hash: hash}, acc ->
-        MapSet.put(acc, %{
-          address_hash: hash,
-          token_contract_address_hash: celo_token,
-          block_number: bn,
-          token_type: "ERC-20",
-          token_id: nil
-        })
-
-      _, acc ->
-        acc
-    end)
-  end
-
-  defp config(key) do
-    Application.get_env(:indexer, __MODULE__, [])[key]
-  end
-
-  defp read_addresses do
-    with {:ok, celo_token} <- Util.get_address("GoldToken"),
-         {:ok, stable_token_usd} <- Util.get_address("StableToken"),
-         {:ok, stable_token_eur} <- Util.get_address("StableTokenEUR"),
-         {:ok, stable_token_real} <- Util.get_address("StableTokenBRL"),
-         {:ok, oracle_address} <- Util.get_address("SortedOracles") do
-      tokens = %{
-        celo: celo_token,
-        cusd: stable_token_usd,
-        ceur: stable_token_eur,
-        creal: stable_token_real
-      }
-
-      {:ok, tokens, oracle_address, true}
-    else
-      _err ->
-        {:ok, %{celo: nil, cusd: nil, ceur: nil, creal: nil}, nil, false}
-    end
-  end
-
   @decorate span(tracer: Tracer)
   @spec fetch_and_import_range(t, Range.t()) ::
           {:ok, %{inserted: %{}, errors: [EthereumJSONRPC.Transport.error()]}}
           | {:error,
-             {step :: atom(), reason :: [%Ecto.Changeset{}] | term()}
+             {step :: atom(), reason :: [Ecto.Changeset.t()] | term()}
              | {step :: atom(), failed_value :: term(), changes_so_far :: term()}}
   def fetch_and_import_range(
         %__MODULE__{
@@ -220,43 +180,44 @@ defmodule Indexer.Block.Fetcher do
       )
       when callback_module != nil do
     with {:blocks,
-          {:ok,
-           %Blocks{
-             blocks_params: blocks_params,
-             transactions_params: transactions_params_without_receipts,
-             block_second_degree_relations_params: block_second_degree_relations_params,
-             errors: blocks_errors
-           }}} <- {:blocks, EthereumJSONRPC.fetch_blocks_by_range(range, json_rpc_named_arguments)},
+          {
+            :ok,
+            # Fetch blocks and associated block data (transactions included)
+            %Blocks{
+              blocks_params: blocks_params,
+              transactions_params: transactions_params_without_receipts,
+              block_second_degree_relations_params: block_second_degree_relations_params,
+              errors: blocks_errors
+            }
+          }} <- {:blocks, EthereumJSONRPC.fetch_blocks_by_range(range, json_rpc_named_arguments)},
          blocks = TransformBlocks.transform_blocks(blocks_params),
-         {:logs, {:ok, %{logs: extra_logs}}} <- {:logs, EthereumJSONRPC.fetch_logs(range, json_rpc_named_arguments)},
+
+         # Fetch and process logs + tx receipts
+         {:logs, {:ok, %{logs: epoch_logs}}} <- {:logs, EthereumJSONRPC.fetch_logs(range, json_rpc_named_arguments)},
          {:receipts, {:ok, receipt_params}} <- {:receipts, Receipts.fetch(state, transactions_params_without_receipts)},
          %{logs: tx_logs, receipts: receipts} = receipt_params,
-         logs = tx_logs ++ process_extra_logs(extra_logs),
+         logs = tx_logs ++ process_extra_logs(epoch_logs),
+
+         # combine transactions with receipts
+         transactions_with_receipts = Receipts.put(transactions_params_without_receipts, receipts),
+
+         # extract token transfers from logs
+         %{token_transfers: normal_token_transfers, tokens: normal_tokens} = TokenTransfers.parse(logs),
+
+         # extract celo core contract events from logs
          new_core_contracts = process_celo_core_contracts(logs),
          celo_contract_events = EventMap.celo_rpc_to_event_params(logs),
-         transactions_with_receipts = Receipts.put(transactions_params_without_receipts, receipts),
-         %{token_transfers: normal_token_transfers, tokens: normal_tokens} = TokenTransfers.parse(logs),
-         try_celo_token_enabled = config(:enable_gold_token),
-         {:ok,
-          %{
-            celo: celo_token,
-            cusd: stable_token_usd,
-            creal: _,
-            ceur: _
-          }, oracle_address,
-          celo_token_enabled} <-
-           (if try_celo_token_enabled do
-              read_addresses()
-            else
-              {:ok, %{celo: nil, cusd: nil, ceur: nil, creal: nil}, nil, false}
-            end),
-         %{token_transfers: celo_token_transfers} =
-           (if celo_token_enabled do
-              TokenTransfers.parse_tx(transactions_with_receipts, celo_token)
-            else
-              %{token_transfers: []}
-            end),
-         # Non CELO fees should be handled by events
+
+         # Get required core contract addresses from the registry
+         {:ok, celo_token} = Util.get_address("GoldToken"),
+         {:ok, stable_token_usd} = Util.get_address("StableToken"),
+         {:ok, oracle_address} = Util.get_address("SortedOracles"),
+
+         # Create CELO token transfers from native tx values
+         %{token_transfers: native_celo_token_transfers} =
+           TokenTransfers.parse_tx(transactions_with_receipts, celo_token),
+
+         # extract various celo protocol data from logs + oracles
          %{
            accounts: celo_accounts,
            validators: celo_validators,
@@ -271,10 +232,13 @@ defmodule Indexer.Block.Fetcher do
            withdrawals: celo_withdrawals,
            unlocked: celo_unlocked
          } = CeloAccounts.parse(logs, oracle_address),
+
+         # extract cusd + CELO exchange rates from above
          market_history =
            exchange_rates
-           |> Enum.filter(fn el -> el.token == stable_token_usd end)
-           |> Enum.filter(fn el -> el.rate > 0 end)
+           |> Enum.filter(fn el ->
+             el.token == stable_token_usd && el.rate > 0
+           end)
            |> Enum.map(fn %{rate: rate, stamp: time} ->
              inv_rate = Decimal.from_float(1 / rate)
              date = DateTime.to_date(DateTime.from_unix!(time))
@@ -286,17 +250,19 @@ defmodule Indexer.Block.Fetcher do
             else
               []
             end),
+
+         # extract token minting transfers (bridged)
          %{mint_transfers: mint_transfers} = MintTransfers.parse(logs),
+
+         # fetch block reward beneficiaries
          %FetchedBeneficiaries{params_set: beneficiary_params_set, errors: beneficiaries_errors} =
-           fetch_beneficiaries(blocks, json_rpc_named_arguments),
-         tokens =
-           normal_tokens ++
-             (if celo_token_enabled do
-                [%{contract_address_hash: celo_token, type: "ERC-20"}]
-              else
-                []
-              end),
-         token_transfers = normal_token_transfers ++ celo_token_transfers,
+           fetch_beneficiaries(blocks, transactions_with_receipts, json_rpc_named_arguments),
+
+         # fold celo transfers into list of token transfers (treat native chain asset as erc-20)
+         tokens = [%{contract_address_hash: celo_token, type: "ERC-20"} | normal_tokens],
+         token_transfers = normal_token_transfers ++ native_celo_token_transfers,
+
+         # extract all referenced addresses from data
          addresses =
            Addresses.extract_addresses(%{
              block_reward_contract_beneficiaries: MapSet.to_list(beneficiary_params_set),
@@ -307,16 +273,15 @@ defmodule Indexer.Block.Fetcher do
              transactions: transactions_with_receipts,
              wallets: celo_wallets,
              # The address of the CELO token has to be added to the addresses table
-             celo_token:
-               if celo_token_enabled do
-                 [%{hash: celo_token, block_number: last_block}]
-               else
-                 []
-               end
+             celo_token: [%{hash: celo_token, block_number: last_block}]
            }),
+
+         # get celo transfers (erc-20)
          celo_transfers =
            normal_token_transfers
            |> Enum.filter(fn %{token_contract_address_hash: contract} -> contract == celo_token end),
+
+         # extract (instant) coin balances from above data
          coin_balances_params_set =
            %{
              beneficiary_params: MapSet.to_list(beneficiary_params_set),
@@ -326,25 +291,20 @@ defmodule Indexer.Block.Fetcher do
              transactions_params: transactions_with_receipts
            }
            |> AddressCoinBalances.params_set(),
+
+         # extract daily coin balance from above instant balances
          coin_balances_params_daily_set =
            %{
              coin_balances_params: coin_balances_params_set,
              blocks: blocks
            }
            |> AddressCoinBalancesDaily.params_set(),
-         beneficiaries_with_gas_payment <-
-           beneficiary_params_set
-           |> add_gas_payments(transactions_with_receipts, blocks)
-           |> BlockReward.reduce_uncle_rewards(),
-         address_token_balances_from_transfers =
-           AddressTokenBalances.params_set(%{token_transfers_params: token_transfers}),
-         # Also update the CELO token balances
-         address_token_balances =
-           (if celo_token_enabled do
-              add_celo_token_balances(celo_token, addresses, address_token_balances_from_transfers)
-            else
-              address_token_balances_from_transfers
-            end),
+
+         # calculate gas payment beneficiaries
+         # extract address token balances from token transfers
+         beneficiaries_with_gas_payment =
+           beneficiaries_with_gas_payment(blocks, beneficiary_params_set, transactions_with_receipts),
+         address_token_balances = AddressTokenBalances.params_set(%{token_transfers_params: token_transfers}),
          {:ok, inserted} <-
            __MODULE__.import(
              state,
@@ -600,7 +560,48 @@ defmodule Indexer.Block.Fetcher do
     quantity_to_integer(block_quantity)
   end
 
-  defp fetch_beneficiaries(blocks, json_rpc_named_arguments) do
+  defp fetch_beneficiaries(blocks, all_transactions, json_rpc_named_arguments) do
+    case Application.get_env(:indexer, :fetch_rewards_way) do
+      "manual" -> fetch_beneficiaries_manual(blocks, all_transactions)
+      _ -> fetch_beneficiaries_by_trace_block(blocks, json_rpc_named_arguments)
+    end
+  end
+
+  def fetch_beneficiaries_manual(blocks, all_transactions) when is_list(blocks) do
+    block_transactions_map = Enum.group_by(all_transactions, & &1.block_number)
+
+    blocks
+    |> Enum.map(fn block -> fetch_beneficiaries_manual(block, block_transactions_map[block.number] || []) end)
+    |> Enum.reduce(%FetchedBeneficiaries{}, fn params_set, %{params_set: acc_params_set} = acc ->
+      %FetchedBeneficiaries{acc | params_set: MapSet.union(acc_params_set, params_set)}
+    end)
+  end
+
+  def fetch_beneficiaries_manual(block, transactions) do
+    block
+    |> Chain.block_reward_by_parts(transactions)
+    |> reward_parts_to_beneficiaries()
+  end
+
+  defp reward_parts_to_beneficiaries(reward_parts) do
+    reward =
+      reward_parts.static_reward
+      |> Wei.sum(reward_parts.txn_fees)
+      |> Wei.sub(reward_parts.burned_fees)
+      |> Wei.sum(reward_parts.uncle_reward)
+
+    MapSet.new([
+      %{
+        address_hash: reward_parts.miner_hash,
+        block_hash: reward_parts.block_hash,
+        block_number: reward_parts.block_number,
+        reward: reward,
+        address_type: :validator
+      }
+    ])
+  end
+
+  defp fetch_beneficiaries_by_trace_block(blocks, json_rpc_named_arguments) do
     hash_string_by_number =
       Enum.into(blocks, %{}, fn %{number: number, hash: hash_string}
                                 when is_integer(number) and is_binary(hash_string) ->
@@ -664,6 +665,18 @@ defmodule Indexer.Block.Fetcher do
       end
     end)
     |> Enum.into(MapSet.new())
+  end
+
+  defp beneficiaries_with_gas_payment(blocks, beneficiary_params_set, transactions_with_receipts) do
+    case Application.get_env(:indexer, :fetch_rewards_way) do
+      "manual" ->
+        beneficiary_params_set
+
+      _ ->
+        beneficiary_params_set
+        |> add_gas_payments(transactions_with_receipts, blocks)
+        |> BlockReward.reduce_uncle_rewards()
+    end
   end
 
   defp add_gas_payments(beneficiaries, transactions, blocks) do

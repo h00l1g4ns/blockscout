@@ -1,12 +1,21 @@
 <section class="container">
   <% is_proxy = BlockScoutWeb.AddressView.smart_contract_is_proxy?(@address) %>
 
-  <%= render BlockScoutWeb.AddressView, "overview.html", address: @address, is_proxy: is_proxy, conn: @conn, exchange_rate: @exchange_rate, coin_balance_status: @coin_balance_status, counters_path: @counters_path %>
+  <%= render BlockScoutWeb.AddressView, "overview.html",
+    address: @address,
+    is_proxy: is_proxy,
+    conn: @conn,
+    exchange_rate: @exchange_rate,
+    coin_balance_status: @coin_balance_status,
+    counters_path: @counters_path,
+    tags: @tags,
+    celo_epoch: @celo_epoch
+  %>
 
   <section data-page="address-internal-transactions">
     <div class="card">
       <%= render BlockScoutWeb.AddressView, "_tabs.html", address: @address, is_proxy: is_proxy, conn: @conn %>
-      <div class="card-body" data-async-load data-async-listing="<%= @current_path %>">
+      <div class="card-body" data-async-load data-async-listing="<%= @current_path %>" data-no-self-calls>
         <div data-selector="channel-batching-message" class="d-none">
           <div data-selector="reload-button" class="alert alert-info">
             <a href="#" class="alert-link"><span data-selector="channel-batching-count"></span> <%= gettext "More internal transactions have come in" %></a>
@@ -60,7 +69,9 @@
         </div>
 
         <div class="transaction-bottom-panel">
-          <%= render BlockScoutWeb.CommonComponentsView, "_csv_export_button.html", address: Address.checksum(@address.hash), type: "internal-transactions", conn: @conn %>
+          <%= if Application.get_env(:block_scout_web, BlockScoutWeb.CsvExportController)[:itx_export_enabled] do %>
+            <%= render BlockScoutWeb.CommonComponentsView, "_csv_export_button.html", address: Address.checksum(@address.hash), type: "internal-transactions", conn: @conn %>
+          <% end %>
           <%= render BlockScoutWeb.CommonComponentsView, "_pagination_container.html", position: "bottom", cur_page_number: "1", show_pagination_limit: true, data_next_page_button: true, data_prev_page_button: true %>
         </div>
 

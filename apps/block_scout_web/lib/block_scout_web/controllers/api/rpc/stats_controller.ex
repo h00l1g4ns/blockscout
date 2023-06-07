@@ -3,6 +3,7 @@ defmodule BlockScoutWeb.API.RPC.StatsController do
 
   use Explorer.Schema
 
+  alias Explorer
   alias Explorer.{Chain, Etherscan, ExchangeRates}
   alias Explorer.Chain.Cache.{AddressSum, AddressSumMinusBurnt}
   alias Explorer.Chain.Wei
@@ -11,7 +12,13 @@ defmodule BlockScoutWeb.API.RPC.StatsController do
     with {:contractaddress_param, {:ok, contractaddress_param}} <- fetch_contractaddress(params),
          {:format, {:ok, address_hash}} <- to_address_hash(contractaddress_param),
          {:token, {:ok, token}} <- {:token, Chain.token_from_address_hash(address_hash)} do
-      render(conn, "tokensupply.json", total_supply: Decimal.to_string(token.total_supply))
+      case Map.get(params, "cmc") do
+        nil ->
+          render(conn, "tokensupply.json", total_supply: Decimal.to_string(token.total_supply))
+
+        _ ->
+          conn |> cmc_tokensupply(token)
+      end
     else
       {:contractaddress_param, :error} ->
         render(conn, :error, error: "Query parameter contract address is required")
@@ -22,6 +29,19 @@ defmodule BlockScoutWeb.API.RPC.StatsController do
       {:token, {:error, :not_found}} ->
         render(conn, :error, error: "contract address not found")
     end
+  end
+
+  defp cmc_tokensupply(conn, token) do
+    formatted =
+      token.total_supply
+      |> Wei.from(:wei)
+      |> Wei.to(:ether)
+      |> Decimal.round(9)
+      |> Decimal.to_string()
+
+    conn
+    |> put_resp_content_type("text/plain")
+    |> send_resp(200, formatted)
   end
 
   def ethsupplyexchange(conn, _params) do
@@ -45,7 +65,7 @@ defmodule BlockScoutWeb.API.RPC.StatsController do
     cached_coin_total_supply_wei = AddressSumMinusBurnt.get_sum_minus_burnt()
 
     coin_total_supply_wei =
-      if Decimal.cmp(cached_coin_total_supply_wei, 0) == :gt do
+      if Decimal.compare(cached_coin_total_supply_wei, 0) == :gt do
         cached_coin_total_supply_wei
       else
         Chain.get_last_fetched_counter("sum_coin_total_supply_minus_burnt")
@@ -60,7 +80,7 @@ defmodule BlockScoutWeb.API.RPC.StatsController do
   end
 
   def coinprice(conn, _params) do
-    symbol = Application.get_env(:explorer, :coin)
+    symbol = Explorer.coin()
     rates = ExchangeRates.lookup(symbol)
 
     render(conn, "coinprice.json", rates: rates)

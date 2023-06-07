@@ -106,7 +106,8 @@ defmodule BlockScoutWeb.Etherscan do
         "transactionHash" => "0xd65b788c610949704a5f9aac2228c7c777434dfe11c863a12306f57fcbd8cdbb",
         "index" => "0",
         "input" => "",
-        "type" => "create",
+        "type" => "call",
+        "callType" => "delegatecall",
         "gas" => "814937",
         "gasUsed" => "536262",
         "isError" => "0",
@@ -352,35 +353,6 @@ defmodule BlockScoutWeb.Etherscan do
     "status" => "0",
     "message" => "Invalid contract address format",
     "result" => nil
-  }
-
-  @token_bridgedtokenlist_example_value %{
-    "status" => "1",
-    "message" => "OK",
-    "result" => [
-      %{
-        "foreignChainId" => "1",
-        "foreignTokenContractAddressHash" => "0x0ae055097c6d159879521c384f1d2123d1f195e6",
-        "homeContractAddressHash" => "0xb7d311e2eb55f2f68a9440da38e7989210b9a05e",
-        "homeDecimals" => "18",
-        "homeHolderCount" => 393,
-        "homeName" => "STAKE on xDai",
-        "homeSymbol" => "STAKE",
-        "homeTotalSupply" => "1484374.775044204093387391",
-        "homeUsdValue" => "18807028.39981006586321824397"
-      },
-      %{
-        "foreignChainId" => "1",
-        "foreignTokenContractAddressHash" => "0xf5581dfefd8fb0e4aec526be659cfab1f8c781da",
-        "homeContractAddressHash" => "0xd057604a14982fe8d88c5fc25aac3267ea142a08",
-        "homeDecimals" => "18",
-        "homeHolderCount" => 73,
-        "homeName" => "HOPR Token on xDai",
-        "homeSymbol" => "HOPR",
-        "homeTotalSupply" => "26600449.86076749062791602",
-        "homeUsdValue" => "6638727.472651464170990256943"
-      }
-    ]
   }
 
   @stats_tokensupply_example_value %{
@@ -678,196 +650,290 @@ defmodule BlockScoutWeb.Etherscan do
     "result" => nil
   }
 
-  @reward_getvoterrewardsforgroup_example_value %{
-    "status" => "1",
-    "message" => "OK",
-    "result" => %{
-      "total" => "350",
-      "rewards" => [
-        %{
-          "amount" => "80",
-          "block_hash" => "0x0100000000000000000000000000000000000000000000000000000000000001",
-          "block_number" => "10696320",
-          "date" => "2022-01-01T17:42:43.162804Z",
-          "epochNumber" => "619"
-        },
-        %{
-          "amount" => "20",
-          "block_hash" => "0x0100000000000000000000000000000000000000000000000000000000000002",
-          "block_number" => "10713600",
-          "date" => "2022-01-02T17:42:43.162804Z",
-          "epochNumber" => "620"
-        },
-        %{
-          "amount" => "75",
-          "block_hash" => "0x0100000000000000000000000000000000000000000000000000000000000003",
-          "block_number" => "10730880",
-          "date" => "2022-01-03T17:42:43.162804Z",
-          "epochNumber" => "621"
-        },
-        %{
-          "amount" => "31",
-          "block_hash" => "0x0100000000000000000000000000000000000000000000000000000000000004",
-          "block_number" => "10748160",
-          "date" => "2022-01-04T17:42:43.162804Z",
-          "epochNumber" => "622"
-        },
-        %{
-          "amount" => "77",
-          "block_hash" => "0x0100000000000000000000000000000000000000000000000000000000000005",
-          "block_number" => "10765440",
-          "date" => "2022-01-05T17:42:43.162804Z",
-          "epochNumber" => "623"
-        },
-        %{
-          "amount" => "67",
-          "block_hash" => "0x0100000000000000000000000000000000000000000000000000000000000006",
-          "block_number" => "10782720",
-          "date" => "2022-01-06T17:42:43.162804Z",
-          "epochNumber" => "624"
-        }
-      ]
-    }
-  }
-
-  @reward_getvoterrewards_example_value %{
+  @epoch_getvoterrewards_example_value %{
     "status" => "1",
     "message" => "OK",
     "result" => %{
       "rewards" => [
         %{
-          "account" => "0x0000000000000000000000000000000000000001",
-          "amount" => "75",
-          "date" => "2022-01-03T17:42:43.162804Z",
-          "blockNumber" => "10730880",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000003",
-          "epochNumber" => "621",
-          "group" => "0x3fb1cd2cd96c6d5c0b5eb3322d807b34482481d4"
+          "amounts" => %{
+            "celo" => "0.882151385009359104",
+            "wei" => "882151385009359104"
+          },
+          "blockHash" => "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "blockNumber" => "15603840",
+          "blockTimestamp" => "2022-10-13T18:53:12.162804Z",
+          "epochNumber" => "903",
+          "meta" => %{
+            "groupAddress" => "0x000000000000000000000000000000000000000a"
+          },
+          "rewardAddressVotingGold" => %{
+            "celo" => "1154.13989309809164288",
+            "wei" => "1154139893098091642880"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressLockedGold" => %{
+            "celo" => "3600.863678437659246592",
+            "wei" => "3600863678437659246592"
+          }
         },
         %{
-          "account" => "0x0000000000000000000000000000000000000001",
-          "amount" => "31",
-          "date" => "2022-01-04T17:42:43.162804Z",
-          "blockNumber" => "10748160",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000004",
-          "epochNumber" => "622",
-          "group" => "0x3fb1cd2cd96c6d5c0b5eb3322d807b34482481d4"
+          "amounts" => %{
+            "celo" => "0.135838291611302624",
+            "wei" => "135838291611302624"
+          },
+          "blockHash" => "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "blockNumber" => "15603840",
+          "blockTimestamp" => "2022-10-13T18:53:12.162804Z",
+          "epochNumber" => "903",
+          "meta" => %{
+            "groupAddress" => "0x000000000000000000000000000000000000000b"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressVotingGold" => %{
+            "celo" => "1154.13989309809164288",
+            "wei" => "1154139893098091642880"
+          },
+          "rewardAddressLockedGold" => %{
+            "celo" => "3600.863678437659246592",
+            "wei" => "3600863678437659246592"
+          }
         },
         %{
-          "account" => "0x0000000000000000000000000000000000000001",
-          "amount" => "77",
-          "date" => "2022-01-05T17:42:43.162804Z",
-          "blockNumber" => "10765440",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000005",
-          "epochNumber" => "623",
-          "group" => "0x3fb1cd2cd96c6d5c0b5eb3322d807b34482481d4"
-        },
-        %{
-          "account" => "0x0000000000000000000000000000000000000001",
-          "amount" => "39",
-          "date" => "2022-01-04T17:42:43.162804Z",
-          "blockNumber" => "10748160",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000004",
-          "epochNumber" => "622",
-          "group" => "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae"
-        },
-        %{
-          "account" => "0x0000000000000000000000000000000000000001",
-          "amount" => "78",
-          "date" => "2022-01-05T17:42:43.162804Z",
-          "blockNumber" => "10765440",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000005",
-          "epochNumber" => "623",
-          "group" => "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae"
+          "amounts" => %{
+            "celo" => "1.207535714047953152",
+            "wei" => "1207535714047953152"
+          },
+          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000008",
+          "blockNumber" => "15586560",
+          "blockTimestamp" => "2022-10-12T18:53:12.162804Z",
+          "epochNumber" => "902",
+          "meta" => %{
+            "groupAddress" => "0x000000000000000000000000000000000000000a"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressVotingGold" => %{
+            "celo" => "4105.7763412674379776",
+            "wei" => "4105776341267437977600"
+          },
+          "rewardAddressLockedGold" => %{
+            "celo" => "4762.623261434422755328",
+            "wei" => "4762623261434422755328"
+          }
         }
       ],
-      "totalRewardCelo" => "300",
-      "from" => "2022-01-03 00:00:00.000000Z",
-      "to" => "2022-01-06 00:00:00.000000Z"
+      "totalRewardAmounts" => %{
+        "celo" => "2.606411279779432352",
+        "wei" => "2606411279779432352"
+      },
+      "totalRewardCount" => "123"
     }
   }
 
-  @reward_getvalidatorrewards_example_value %{
+  @epoch_getvalidatorrewards_example_value %{
     "status" => "1",
     "message" => "OK",
     "result" => %{
       "rewards" => [
         %{
-          "account" => "0x0000000000000000000000000000000000000001",
-          "amount" => "100000",
-          "date" => "2022-01-03T17:42:43.162804Z",
-          "blockNumber" => "10730880",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000004",
-          "epochNumber" => "621",
-          "group" => "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae"
+          "amounts" => %{
+            "celo" => "0.882151385009359104",
+            "wei" => "882151385009359104"
+          },
+          "blockHash" => "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "blockNumber" => "15603840",
+          "blockTimestamp" => "2022-10-13T18:53:12.162804Z",
+          "epochNumber" => "903",
+          "meta" => %{
+            "groupAddress" => "0x000000000000000000000000000000000000000a"
+          },
+          "rewardAddressVotingGold" => %{
+            "cusd" => "1154.13989309809164288"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressLockedGold" => %{
+            "celo" => "3600.863678437659246592",
+            "wei" => "3600863678437659246592"
+          }
         },
         %{
-          "account" => "0x0000000000000000000000000000000000000001",
-          "amount" => "200000",
-          "date" => "2022-01-04T17:42:43.162804Z",
-          "blockNumber" => "10748160",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000005",
-          "epochNumber" => "622",
-          "group" => "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae"
+          "amounts" => %{
+            "cusd" => "0.135838291611302624"
+          },
+          "blockHash" => "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "blockNumber" => "15603840",
+          "blockTimestamp" => "2022-10-13T18:53:12.162804Z",
+          "epochNumber" => "903",
+          "meta" => %{
+            "groupAddress" => "0x000000000000000000000000000000000000000b"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressVotingGold" => %{
+            "celo" => "1154.13989309809164288",
+            "wei" => "1154139893098091642880"
+          },
+          "rewardAddressLockedGold" => %{
+            "celo" => "3600.863678437659246592",
+            "wei" => "3600863678437659246592"
+          }
+        },
+        %{
+          "amounts" => %{
+            "cusd" => "1.207535714047953152"
+          },
+          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000008",
+          "blockNumber" => "15586560",
+          "blockTimestamp" => "2022-10-12T18:53:12.162804Z",
+          "epochNumber" => "902",
+          "meta" => %{
+            "groupAddress" => "0x000000000000000000000000000000000000000a"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressVotingGold" => %{
+            "celo" => "4105.7763412674379776",
+            "wei" => "4105776341267437977600"
+          },
+          "rewardAddressLockedGold" => %{
+            "celo" => "4762.623261434422755328",
+            "wei" => "4762623261434422755328"
+          }
         }
       ],
-      "totalRewardCelo" => "300000",
-      "from" => "2022-01-03 00:00:00.000000Z",
-      "to" => "2022-01-06 00:00:00.000000Z"
+      "totalRewardAmounts" => %{
+        "cusd" => "2.606411279779432352"
+      },
+      "totalRewardCount" => "123"
     }
   }
 
-  @reward_getvalidatorgrouprewards_example_value %{
+  @epoch_getgrouprewards_example_value %{
     "status" => "1",
     "message" => "OK",
     "result" => %{
       "rewards" => [
         %{
-          "amount" => "100000",
-          "date" => "2022-01-03T17:42:43.162804Z",
-          "blockNumber" => "10730880",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000004",
-          "epochNumber" => "621",
-          "group" => "0x0000000000000000000000000000000000000001",
-          "validator" => "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae"
+          "amounts" => %{
+            "celo" => "0.882151385009359104",
+            "wei" => "882151385009359104"
+          },
+          "blockHash" => "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "blockNumber" => "15603840",
+          "blockTimestamp" => "2022-10-13T18:53:12.162804Z",
+          "epochNumber" => "903",
+          "meta" => %{
+            "validatorAddress" => "0x000000000000000000000000000000000000000a"
+          },
+          "rewardAddressVotingGold" => %{
+            "cusd" => "1154.13989309809164288"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressLockedGold" => %{
+            "celo" => "3600.863678437659246592",
+            "wei" => "3600863678437659246592"
+          }
         },
         %{
-          "amount" => "200000",
-          "date" => "2022-01-04T17:42:43.162804Z",
-          "blockNumber" => "10748160",
-          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000005",
-          "epochNumber" => "622",
-          "group" => "0x0000000000000000000000000000000000000001",
-          "validator" => "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae"
+          "amounts" => %{
+            "cusd" => "0.135838291611302624"
+          },
+          "blockHash" => "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "blockNumber" => "15603840",
+          "blockTimestamp" => "2022-10-13T18:53:12.162804Z",
+          "epochNumber" => "903",
+          "meta" => %{
+            "validatorAddress" => "0x000000000000000000000000000000000000000b"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressVotingGold" => %{
+            "celo" => "1154.13989309809164288",
+            "wei" => "1154139893098091642880"
+          },
+          "rewardAddressLockedGold" => %{
+            "celo" => "3600.863678437659246592",
+            "wei" => "3600863678437659246592"
+          }
+        },
+        %{
+          "amounts" => %{
+            "cusd" => "1.207535714047953152"
+          },
+          "blockHash" => "0x0000000000000000000000000000000000000000000000000000000000000008",
+          "blockNumber" => "15586560",
+          "blockTimestamp" => "2022-10-12T18:53:12.162804Z",
+          "epochNumber" => "902",
+          "meta" => %{
+            "validatorAddress" => "0x000000000000000000000000000000000000000a"
+          },
+          "rewardAddress" => "0x0000000000000000000000000000000000000009",
+          "rewardAddressVotingGold" => %{
+            "celo" => "4105.7763412674379776",
+            "wei" => "4105776341267437977600"
+          },
+          "rewardAddressLockedGold" => %{
+            "celo" => "4762.623261434422755328",
+            "wei" => "4762623261434422755328"
+          }
         }
       ],
-      "totalRewardCelo" => "300",
-      "from" => "2022-01-03 00:00:00.000000Z",
-      "to" => "2022-01-06 00:00:00.000000Z"
+      "totalRewardAmounts" => %{
+        "cusd" => "2.606411279779432352"
+      },
+      "totalRewardCount" => "123"
     }
   }
 
-  @reward_getvoterrewardsforgroup_example_value_error %{
+  @epoch_getepoch_example_value %{
+    "status" => "1",
+    "message" => "OK",
+    "result" => %{
+      "blockHash" => "0x8458fb8dd55374f520220674b5a968fec16ba85ff7142840c5725d96ea2f7ea2",
+      "blockNumber" => "16295040",
+      "carbonOffsettingTargetEpochRewards" => "87163838788411140296",
+      "communityTargetEpochRewards" => "21790959697102785074162",
+      "electableValidatorsMax" => "110",
+      "goldTotalSupply" => "658171418260749720131929771",
+      "reserveBolster" => "21826022274754475571222",
+      "reserveGoldBalance" => "120166650790384303309143796",
+      "rewardsMultiplier" => "674174253198950780917430",
+      "rewardsMultiplierMax" => "2000000000000000000000000",
+      "rewardsMultiplierOver" => "5000000000000000000000000",
+      "rewardsMultiplierUnder" => "500000000000000000000000",
+      "stableUsdTotalSupply" => "46006737472661156298494793",
+      "targetTotalSupply" => "634481650177574835109081684",
+      "targetVotingFraction" => "600000000000000000000000",
+      "targetVotingYield" => "177514977205581958880",
+      "targetVotingYieldAdjustmentFactor" => "1127990000000000000",
+      "targetVotingYieldMax" => "500000000000000000000",
+      "totalLockedGold" => "313261616033536686822765795",
+      "totalNonVoting" => "9147143477321528669119670",
+      "totalVotes" => "304114472556215158153646125",
+      "validatorTargetEpochRewards" => "138528956136770708407",
+      "voterTargetEpochRewards" => "35685282357248817437866",
+      "votingFraction" => "565263527284572821503865"
+    }
+  }
+
+  @epoch_getvoterrewards_example_value_error %{
     "status" => "0",
-    "message" => "Invalid voter address hash",
+    "message" => "One or more voter addresses are invalid",
     "result" => []
   }
 
-  @reward_getvoterrewards_example_value_error %{
+  @epoch_getvalidatorrewards_example_value_error %{
     "status" => "0",
-    "message" => "Invalid voter address hash",
+    "message" => "One or more validator addresses are invalid",
     "result" => []
   }
 
-  @reward_getvalidatorrewards_example_value_error %{
+  @epoch_getgrouprewards_example_value_error %{
     "status" => "0",
-    "message" => "Invalid validator address hash",
+    "message" => "One or more group addresses are invalid",
     "result" => []
   }
 
-  @reward_getvalidatorgrouprewards_example_value_error %{
+  @epoch_getepoch_example_value_error %{
     "status" => "0",
-    "message" => "Invalid group address hash",
+    "message" => "Wrong format for epoch number provided",
     "result" => []
   }
 
@@ -875,12 +941,6 @@ defmodule BlockScoutWeb.Etherscan do
     type: "status",
     enum: ~s(["0", "1"]),
     enum_interpretation: %{"0" => "error", "1" => "ok"}
-  }
-
-  @success_status_type %{
-    type: "status",
-    enum: ~s(["1"]),
-    enum_interpretation: %{"1" => "ok"}
   }
 
   @jsonrpc_version_type %{
@@ -909,6 +969,17 @@ defmodule BlockScoutWeb.Etherscan do
     example: ~s("663046792267785498951364")
   }
 
+  @amounts_per_currency_type %{
+    name: "Amounts per currency",
+    type: "Amounts per currency",
+    definition: "Amounts presented in different currencies/formats depending on the type of the reward",
+    fields: %{
+      celo: %{type: "float"},
+      cUSD: %{type: "float"},
+      wei: @wei_type
+    }
+  }
+
   @gas_type %{
     type: "gas",
     definition: "A nonnegative number roughly equivalent to computational steps.",
@@ -919,6 +990,16 @@ defmodule BlockScoutWeb.Etherscan do
     type: "address hash",
     definition: "A 160-bit code used for identifying accounts or contracts.",
     example: ~s("0x95426f2bc716022fcf1def006dbc4bb81f5b5164")
+  }
+
+  @epoch_rewards_meta_type %{
+    type: "epoch rewards meta",
+    definition:
+      "Additional information per reward type. For voter and validator rewards it will be \"groupAddress\" and for group rewards it will be \"validatorAddress\".",
+    fields: %{
+      groupAddress: @address_hash_type,
+      validatorAddress: @address_hash_type
+    }
   }
 
   @stale_type %{
@@ -947,6 +1028,12 @@ defmodule BlockScoutWeb.Etherscan do
     example: ~s("34092")
   }
 
+  @epoch_number_type %{
+    type: "epoch number",
+    definition: "A nonnegative number used to identify epochs.",
+    example: ~s("902")
+  }
+
   @input_type %{
     type: "input",
     definition: "Data sent along with the transaction. A variable-byte-length binary.",
@@ -972,6 +1059,7 @@ defmodule BlockScoutWeb.Etherscan do
   }
 
   @token_id_type %{
+    name: "Token ID",
     type: "integer",
     definition: "id of token",
     example: ~s("0")
@@ -1038,37 +1126,6 @@ defmodule BlockScoutWeb.Etherscan do
         type: "value",
         definition: "A nonnegative number used to identify the balance of the target token.",
         example: ~s("1000000000000000000")
-      }
-    }
-  }
-
-  @bridged_token_details %{
-    name: "Bridged Token Detail",
-    fields: %{
-      foreignChainId: %{
-        type: "value",
-        definition: "Chain ID of the chain where original token exists.",
-        example: ~s("1")
-      },
-      foreignTokenContractAddressHash: @address_hash_type,
-      homeContractAddressHash: @address_hash_type,
-      homeDecimals: @token_decimal_type,
-      homeHolderCount: %{
-        type: "value",
-        definition: "Token holders count.",
-        example: ~s("393")
-      },
-      homeName: @token_name_type,
-      homeSymbol: @token_symbol_type,
-      homeTotalSupply: %{
-        type: "value",
-        definition: "Total supply of the token on the home side (where token was bridged).",
-        example: ~s("1484374.775044204093387391")
-      },
-      homeUsdValue: %{
-        type: "value",
-        definition: "Total supply of the token on the home side (where token was bridged) in USD.",
-        example: ~s("6638727.472651464170990256943")
       }
     }
   }
@@ -1166,6 +1223,11 @@ defmodule BlockScoutWeb.Etherscan do
         definition: ~s(Possible values: "create", "call", "reward", or "selfdestruct"),
         example: ~s("create")
       },
+      callType: %{
+        type: "type",
+        definition: ~s(Possible values: "call", "callcode", "delegatecall", or "staticcall"),
+        example: ~s("delegatecall")
+      },
       gas: @gas_type,
       gasUsed: @gas_type,
       isError: %{
@@ -1245,8 +1307,21 @@ defmodule BlockScoutWeb.Etherscan do
         definition: "The transferred amount.",
         example: ~s("663046792267785498951364")
       },
+      values: %{
+        type: "array",
+        array_type: %{
+          name: "Transferred amount",
+          type: "integer",
+          definition: "The transferred amount of particular token instance."
+        },
+        definition: "Transferred amounts of token instances in ERC-1155 batch transfer corresponding to tokenIDs field."
+      },
       tokenName: @token_name_type,
       tokenID: @token_id_type,
+      tokenIDs: %{
+        type: "array",
+        array_type: @token_id_type
+      },
       tokenSymbol: @token_symbol_type,
       tokenDecimal: @token_decimal_type,
       transactionIndex: @transaction_index_type,
@@ -1578,75 +1653,78 @@ defmodule BlockScoutWeb.Etherscan do
     }
   }
 
-  @voter_rewards_for_group %{
-    name: "VoterRewards",
-    fields: %{
-      total: @wei_type,
-      rewards: %{
-        type: "array",
-        array_type: %{
-          name: "VoterReward",
-          fields: %{
-            amount: @wei_type,
-            blockHash: @block_hash_type,
-            blockNumber: @block_number_type,
-            date: %{type: "timestamp"},
-            epochNumber: "integer"
-          }
-        }
-      }
-    }
-  }
-
-  @generic_epoch_rewards %{
+  @epoch_rewards %{
     type: "array",
     array_type: %{
-      name: "Reward",
+      name: "Epoch Reward",
       fields: %{
-        account: @address_hash_type,
-        amount: @wei_type,
         blockHash: @block_hash_type,
         blockNumber: @block_number_type,
-        date: %{type: "timestamp"},
-        epochNumber: "integer",
-        group: @address_hash_type
+        blockTimestamp: %{type: "timestamp"},
+        epochNumber: @epoch_number_type,
+        rewardAddress: @address_hash_type,
+        rewardAddressLockedGold: @amounts_per_currency_type,
+        rewardAddressVotingGold: @amounts_per_currency_type,
+        meta: @epoch_rewards_meta_type,
+        amount: @amounts_per_currency_type
       }
     }
   }
 
-  @group_epoch_rewards %{
-    type: "array",
-    array_type: %{
-      name: "Reward",
-      fields: %{
-        amount: @wei_type,
-        blockHash: @block_hash_type,
-        blockNumber: @block_number_type,
-        date: %{type: "timestamp"},
-        epochNumber: "integer",
-        group: @address_hash_type,
-        validator: @address_hash_type
-      }
+  @epoch_rewards_response %{
+    name: "Epoch rewards",
+    fields: %{
+      totalRewardCount: %{type: "string"},
+      totalRewardAmounts: @amounts_per_currency_type,
+      rewards: @epoch_rewards
     }
   }
 
-  @generic_rewards %{
-    name: "Rewards",
+  @epoch_epoch_response %{
+    name: "Epoch data",
     fields: %{
-      totalRewardsCelo: @wei_type,
-      from: %{type: "timestamp"},
-      to: %{type: "timestamp"},
-      rewards: @generic_epoch_rewards
+      blockHash: @block_hash_type,
+      blockNumber: @block_number_type,
+      carbonOffsettingTargetEpochRewards: %{type: "string"},
+      communityTargetEpochRewards: %{type: "string"},
+      electableValidatorsMax: %{type: "string"},
+      goldTotalSupply: %{type: "string"},
+      reserveBolster: %{type: "string"},
+      reserveGoldBalance: %{type: "string"},
+      rewardsMultiplier: %{type: "string"},
+      rewardsMultiplierMax: %{type: "string"},
+      rewardsMultiplierOver: %{type: "string"},
+      rewardsMultiplierUnder: %{type: "string"},
+      stableUsdTotalSupply: %{type: "string"},
+      targetTotalSupply: %{type: "string"},
+      targetVotingFraction: %{type: "string"},
+      targetVotingYield: %{type: "string"},
+      targetVotingYieldAdjustmentFactor: %{type: "string"},
+      targetVotingYieldMax: %{type: "string"},
+      totalLockedGold: %{type: "string"},
+      totalNonVoting: %{type: "string"},
+      totalVotes: %{type: "string"},
+      validatorTargetEpochRewards: %{type: "string"},
+      voterTargetEpochRewards: %{type: "string"},
+      votingFraction: %{type: "string"}
     }
   }
 
-  @group_rewards %{
-    name: "Rewards",
+  @epoch_validator_rewards_response %{
+    name: "Epoch validator rewards",
     fields: %{
-      totalRewardsCelo: @wei_type,
-      from: %{type: "timestamp"},
-      to: %{type: "timestamp"},
-      rewards: @group_epoch_rewards
+      totalRewardCount: %{type: "string"},
+      totalRewardAmounts: @amounts_per_currency_type,
+      rewards: @epoch_rewards
+    }
+  }
+
+  @epoch_group_rewards_response %{
+    name: "Epoch group rewards",
+    fields: %{
+      totalRewardCount: %{type: "string"},
+      totalRewardAmounts: @amounts_per_currency_type,
+      rewards: @epoch_rewards
     }
   }
 
@@ -1852,12 +1930,12 @@ defmodule BlockScoutWeb.Etherscan do
           "A string representing the order by block number direction. Defaults to descending order. Available values: asc, desc"
       },
       %{
-        key: "startblock",
+        key: "start_block",
         type: "integer",
         description: "A nonnegative integer that represents the starting block number."
       },
       %{
-        key: "endblock",
+        key: "end_block",
         type: "integer",
         description: "A nonnegative integer that represents the ending block number."
       },
@@ -1874,7 +1952,7 @@ defmodule BlockScoutWeb.Etherscan do
           "A nonnegative integer that represents the maximum number of records to return when paginating. 'page' must be provided in conjunction."
       },
       %{
-        key: "filterby",
+        key: "filter_by",
         type: "string",
         description: """
         A string representing the field to filter by. If none is given
@@ -1883,12 +1961,12 @@ defmodule BlockScoutWeb.Etherscan do
         """
       },
       %{
-        key: "starttimestamp",
+        key: "start_timestamp",
         type: "unix timestamp",
         description: "Represents the starting block timestamp."
       },
       %{
-        key: "endtimestamp",
+        key: "end_timestamp",
         type: "unix timestamp",
         description: "Represents the ending block timestamp."
       }
@@ -1945,13 +2023,13 @@ defmodule BlockScoutWeb.Etherscan do
           "A string representing the order by block number direction. Defaults to ascending order. Available values: asc, desc. WARNING: Only available if 'address' is provided."
       },
       %{
-        key: "startblock",
+        key: "start_block",
         type: "integer",
         description:
           "A nonnegative integer that represents the starting block number. WARNING: Only available if 'address' is provided."
       },
       %{
-        key: "endblock",
+        key: "end_block",
         type: "integer",
         description:
           "A nonnegative integer that represents the ending block number. WARNING: Only available if 'address' is provided."
@@ -2020,12 +2098,12 @@ defmodule BlockScoutWeb.Etherscan do
           "A string representing the order by block number direction. Defaults to ascending order. Available values: asc, desc"
       },
       %{
-        key: "startblock",
+        key: "start_block",
         type: "integer",
         description: "A nonnegative integer that represents the starting block number."
       },
       %{
-        key: "endblock",
+        key: "end_block",
         type: "integer",
         description: "A nonnegative integer that represents the ending block number."
       },
@@ -2529,49 +2607,6 @@ defmodule BlockScoutWeb.Etherscan do
     ]
   }
 
-  @token_bridgedtokenlist_action %{
-    name: "bridgedTokenList",
-    description: "Get bridged tokens list.",
-    required_params: [],
-    optional_params: [
-      %{
-        key: "chainid",
-        type: "integer",
-        description: "A nonnegative integer that represents the chain id, where original token exists."
-      },
-      %{
-        key: "page",
-        type: "integer",
-        description:
-          "A nonnegative integer that represents the page number to be used for pagination. 'offset' must be provided in conjunction."
-      },
-      %{
-        key: "offset",
-        type: "integer",
-        description:
-          "A nonnegative integer that represents the maximum number of records to return when paginating. 'page' must be provided in conjunction."
-      }
-    ],
-    responses: [
-      %{
-        code: "200",
-        description: "successful operation",
-        example_value: Jason.encode!(@token_bridgedtokenlist_example_value),
-        model: %{
-          name: "Result",
-          fields: %{
-            status: @success_status_type,
-            message: @message_type,
-            result: %{
-              type: "array",
-              array_type: @bridged_token_details
-            }
-          }
-        }
-      }
-    ]
-  }
-
   @stats_tokensupply_action %{
     name: "tokensupply",
     description:
@@ -2906,6 +2941,18 @@ defmodule BlockScoutWeb.Etherscan do
         type: "string",
         description:
           "Ensures that none of the returned contracts were decompiled with the provided version. Ignored unless filtering for decompiled contracts."
+      },
+      %{
+        key: "verified_at_start_timestamp",
+        type: "unix timestamp",
+        description:
+          "Represents the starting timestamp when contracts verified. Taking into account only with `verified` filter."
+      },
+      %{
+        key: "verified_at_end_timestamp",
+        type: "unix timestamp",
+        description:
+          "Represents the ending timestamp when contracts verified. Taking into account only with `verified` filter."
       }
     ],
     responses: [
@@ -3503,21 +3550,15 @@ defmodule BlockScoutWeb.Etherscan do
     ]
   }
 
-  @reward_getvoterrewardsforgroup_action %{
-    name: "getvoterrewardsforgroup",
-    description: "Get a voter's rewards for a given group",
+  @epoch_getepoch_action %{
+    name: "getepoch",
+    description: "Gets epoch data for given epoch number.",
     required_params: [
       %{
-        key: "voterAddress",
-        placeholder: "voterAddress",
+        key: "epochNumber",
+        placeholder: "epochNumber",
         type: "string",
-        description: "Voter address hash for which you wish to get the rewards."
-      },
-      %{
-        key: "groupAddress",
-        placeholder: "groupAddress",
-        type: "string",
-        description: "Group address hash for which the voter has voted."
+        description: "Epoch number you want to fetch the data for."
       }
     ],
     optional_params: [],
@@ -3525,7 +3566,7 @@ defmodule BlockScoutWeb.Etherscan do
       %{
         code: "200",
         description: "successful operation",
-        example_value: Jason.encode!(@reward_getvoterrewardsforgroup_example_value),
+        example_value: Jason.encode!(@epoch_getepoch_example_value),
         model: %{
           name: "Result",
           fields: %{
@@ -3533,7 +3574,7 @@ defmodule BlockScoutWeb.Etherscan do
             message: @message_type,
             result: %{
               type: "model",
-              model: @voter_rewards_for_group
+              model: @epoch_epoch_response
             }
           }
         }
@@ -3541,42 +3582,72 @@ defmodule BlockScoutWeb.Etherscan do
       %{
         code: "200",
         description: "error",
-        example_value: Jason.encode!(@reward_getvoterrewardsforgroup_example_value_error)
+        example_value: Jason.encode!(@epoch_getepoch_example_value_error)
       }
     ]
   }
 
-  @reward_getvoterrewards_action %{
+  @epoch_getvoterrewards_action %{
     name: "getvoterrewards",
-    description: "Get a voter's rewards for all groups the have voted for",
+    description: "Gets voter epoch rewards for given address(es).",
     required_params: [
       %{
         key: "voterAddress",
         placeholder: "voterAddress",
         type: "string",
-        description:
-          "List of coma separated voter address hashes for which you wish to get the rewards. Example: ?module=reward&action=getvotersrewards&voterAddresses=0x0000000000000000000000000000000000000001, 0x0000000000000000000000000000000000000002"
+        description: "Voter address or addresses (comma-separated) for which rewards were minted."
       }
     ],
     optional_params: [
       %{
-        key: "from",
-        placeholder: "startDate",
+        key: "groupAddress",
+        placeholder: "groupAddress",
         type: "string",
-        description: "Starting date of period you're interested in"
+        description: "Group address or addresses (comma-separated) that voter(s) voted for."
       },
       %{
-        key: "to",
-        placeholder: "endDate",
+        key: "dateFrom",
+        placeholder: "dateFrom",
         type: "string",
-        description: "End date of period you're interested in"
+        description: "Date (in ISO 8601 format) for which to filter from."
+      },
+      %{
+        key: "dateTo",
+        placeholder: "dateTo",
+        type: "string",
+        description: "Date (in ISO 8601 format) for which to filter to."
+      },
+      %{
+        key: "blockNumberFrom",
+        placeholder: "blockNumberFrom",
+        type: "string",
+        description: "Block number for which to filter from."
+      },
+      %{
+        key: "blockNumberTo",
+        placeholder: "blockNumberTo",
+        type: "string",
+        description: "Block number for which to filter to."
+      },
+      %{
+        key: "pageNumber",
+        placeholder: "pageNumber",
+        type: "integer",
+        description: "A nonnegative integer that represents the page number to be used for pagination. Default: 1"
+      },
+      %{
+        key: "pageSize",
+        placeholder: "pageSize",
+        type: "integer",
+        description:
+          "A nonnegative integer that represents the maximum number of records (per page) to return when paginating. Default: 100"
       }
     ],
     responses: [
       %{
         code: "200",
         description: "successful operation",
-        example_value: Jason.encode!(@reward_getvoterrewards_example_value),
+        example_value: Jason.encode!(@epoch_getvoterrewards_example_value),
         model: %{
           name: "Result",
           fields: %{
@@ -3584,7 +3655,7 @@ defmodule BlockScoutWeb.Etherscan do
             message: @message_type,
             result: %{
               type: "model",
-              model: @generic_rewards
+              model: @epoch_rewards_response
             }
           }
         }
@@ -3592,42 +3663,72 @@ defmodule BlockScoutWeb.Etherscan do
       %{
         code: "200",
         description: "error",
-        example_value: Jason.encode!(@reward_getvoterrewards_example_value_error)
+        example_value: Jason.encode!(@epoch_getvoterrewards_example_value_error)
       }
     ]
   }
 
-  @reward_getvalidatorrewards_action %{
+  @epoch_getvalidatorrewards_action %{
     name: "getvalidatorrewards",
-    description: "Get a validator's rewards for a given time-span",
+    description: "Gets validator epoch rewards for given address(es).",
     required_params: [
       %{
         key: "validatorAddress",
         placeholder: "validatorAddress",
         type: "string",
-        description:
-          "Validator address hash or list of comma separated validator address hashes for which you wish to get the rewards. Example: ?module=reward&action=getvalidatorrewards&validatorAddresses=0x0000000000000000000000000000000000000001, 0x0000000000000000000000000000000000000002"
+        description: "Validator address or addresses (comma-separated) for which rewards were minted."
       }
     ],
     optional_params: [
       %{
-        key: "from",
-        placeholder: "startDate",
+        key: "groupAddress",
+        placeholder: "groupAddress",
         type: "string",
-        description: "Starting date of period you're interested in"
+        description: "Group address or addresses (comma-separated) that validators(s) belong to."
       },
       %{
-        key: "to",
-        placeholder: "endDate",
+        key: "dateFrom",
+        placeholder: "dateFrom",
         type: "string",
-        description: "End date of period you're interested in"
+        description: "Date (in ISO 8601 format) for which to filter from."
+      },
+      %{
+        key: "dateTo",
+        placeholder: "dateTo",
+        type: "string",
+        description: "Date (in ISO 8601 format) for which to filter to."
+      },
+      %{
+        key: "blockNumberFrom",
+        placeholder: "blockNumberFrom",
+        type: "string",
+        description: "Block number for which to filter from."
+      },
+      %{
+        key: "blockNumberTo",
+        placeholder: "blockNumberTo",
+        type: "string",
+        description: "Block number for which to filter to."
+      },
+      %{
+        key: "pageNumber",
+        placeholder: "pageNumber",
+        type: "integer",
+        description: "A nonnegative integer that represents the page number to be used for pagination. Default: 1"
+      },
+      %{
+        key: "pageSize",
+        placeholder: "pageSize",
+        type: "integer",
+        description:
+          "A nonnegative integer that represents the maximum number of records (per page) to return when paginating. Default: 100"
       }
     ],
     responses: [
       %{
         code: "200",
         description: "successful operation",
-        example_value: Jason.encode!(@reward_getvalidatorrewards_example_value),
+        example_value: Jason.encode!(@epoch_getvalidatorrewards_example_value),
         model: %{
           name: "Result",
           fields: %{
@@ -3635,7 +3736,7 @@ defmodule BlockScoutWeb.Etherscan do
             message: @message_type,
             result: %{
               type: "model",
-              model: @generic_rewards
+              model: @epoch_validator_rewards_response
             }
           }
         }
@@ -3643,42 +3744,72 @@ defmodule BlockScoutWeb.Etherscan do
       %{
         code: "200",
         description: "error",
-        example_value: Jason.encode!(@reward_getvalidatorrewards_example_value_error)
+        example_value: Jason.encode!(@epoch_getvalidatorrewards_example_value_error)
       }
     ]
   }
 
-  @reward_getvalidatorgrouprewards_action %{
-    name: "getvalidatorgrouprewards",
-    description: "Get a validator group's rewards for a given time-span",
+  @epoch_getgrouprewards_action %{
+    name: "getgrouprewards",
+    description: "Gets group epoch rewards for given address(es).",
     required_params: [
       %{
         key: "groupAddress",
         placeholder: "groupAddress",
         type: "string",
-        description:
-          "Validator group address hash or list of comma separated validator group address hashes for which you wish to get the rewards. Example: ?module=reward&action=getvalidatorgrouprewards&groupAddresses=0x0000000000000000000000000000000000000001, 0x0000000000000000000000000000000000000002"
+        description: "Group address or addresses (comma-separated) for which rewards were minted."
       }
     ],
     optional_params: [
       %{
-        key: "from",
-        placeholder: "startDate",
+        key: "validatorAddress",
+        placeholder: "validatorAddress",
         type: "string",
-        description: "Starting date of period you're interested in"
+        description: "Validator address or addresses (comma-separated) that paid commission to the group(s)."
       },
       %{
-        key: "to",
-        placeholder: "endDate",
+        key: "dateFrom",
+        placeholder: "dateFrom",
         type: "string",
-        description: "End date of period you're interested in"
+        description: "Date (in ISO 8601 format) for which to filter from."
+      },
+      %{
+        key: "dateTo",
+        placeholder: "dateTo",
+        type: "string",
+        description: "Date (in ISO 8601 format) for which to filter to."
+      },
+      %{
+        key: "blockNumberFrom",
+        placeholder: "blockNumberFrom",
+        type: "string",
+        description: "Block number for which to filter from."
+      },
+      %{
+        key: "blockNumberTo",
+        placeholder: "blockNumberTo",
+        type: "string",
+        description: "Block number for which to filter to."
+      },
+      %{
+        key: "pageNumber",
+        placeholder: "pageNumber",
+        type: "integer",
+        description: "A nonnegative integer that represents the page number to be used for pagination. Default: 1"
+      },
+      %{
+        key: "pageSize",
+        placeholder: "pageSize",
+        type: "integer",
+        description:
+          "A nonnegative integer that represents the maximum number of records (per page) to return when paginating. Default: 100"
       }
     ],
     responses: [
       %{
         code: "200",
         description: "successful operation",
-        example_value: Jason.encode!(@reward_getvalidatorgrouprewards_example_value),
+        example_value: Jason.encode!(@epoch_getgrouprewards_example_value),
         model: %{
           name: "Result",
           fields: %{
@@ -3686,7 +3817,7 @@ defmodule BlockScoutWeb.Etherscan do
             message: @message_type,
             result: %{
               type: "model",
-              model: @group_rewards
+              model: @epoch_group_rewards_response
             }
           }
         }
@@ -3694,7 +3825,7 @@ defmodule BlockScoutWeb.Etherscan do
       %{
         code: "200",
         description: "error",
-        example_value: Jason.encode!(@reward_getvalidatorgrouprewards_example_value_error)
+        example_value: Jason.encode!(@epoch_getgrouprewards_example_value_error)
       }
     ]
   }
@@ -3727,8 +3858,7 @@ defmodule BlockScoutWeb.Etherscan do
     actions: [
       @token_gettoken_action,
       @token_gettokenholders_action,
-      @token_tokentx_action,
-      @token_bridgedtokenlist_action
+      @token_tokentx_action
     ]
   }
 
@@ -3774,13 +3904,13 @@ defmodule BlockScoutWeb.Etherscan do
     ]
   }
 
-  @reward_module %{
-    name: "reward",
+  @epoch_module %{
+    name: "epoch",
     actions: [
-      @reward_getvoterrewardsforgroup_action,
-      @reward_getvoterrewards_action,
-      @reward_getvalidatorrewards_action,
-      @reward_getvalidatorgrouprewards_action
+      @epoch_getvoterrewards_action,
+      @epoch_getvalidatorrewards_action,
+      @epoch_getgrouprewards_action,
+      @epoch_getepoch_action
     ]
   }
 
@@ -3792,7 +3922,7 @@ defmodule BlockScoutWeb.Etherscan do
     @block_module,
     @contract_module,
     @transaction_module,
-    @reward_module
+    @epoch_module
   ]
 
   def get_documentation do

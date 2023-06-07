@@ -7,15 +7,14 @@ defmodule BlockScoutWeb.Mixfile do
       app: :block_scout_web,
       build_path: "../../_build",
       config_path: "../../config/config.exs",
-      compilers: [:phoenix, :gettext | Mix.compilers()],
       deps: deps(),
       deps_path: "../../deps",
       description: "Web interface for BlockScout.",
       dialyzer: [
-        plt_add_deps: :transitive,
+        plt_add_deps: :app_tree,
         ignore_warnings: "../../.dialyzer-ignore"
       ],
-      elixir: "~> 1.12",
+      elixir: "~> 1.13",
       elixirc_options: [
         warnings_as_errors: true
       ],
@@ -27,7 +26,7 @@ defmodule BlockScoutWeb.Mixfile do
         dialyzer: :test
       ],
       start_permanent: Mix.env() == :prod,
-      version: "0.0.1"
+      version: "4.1.8"
     ]
   end
 
@@ -48,6 +47,7 @@ defmodule BlockScoutWeb.Mixfile do
 
   defp extra_applications,
     do: [
+      :ueberauth_auth0,
       :logger,
       :runtime_tools,
       :jason,
@@ -67,9 +67,9 @@ defmodule BlockScoutWeb.Mixfile do
       {:absinthe_plug, git: "https://github.com/blockscout/absinthe_plug.git", tag: "1.5.3", override: true},
       # Absinthe support for the Relay framework
       {:absinthe_relay, "~> 1.5"},
-      {:bypass, "~> 1.0", only: :test},
+      {:bypass, "~> 2.1", only: :test},
       # To add (CORS)(https://www.w3.org/TR/cors/)
-      {:cors_plug, "~> 2.0"},
+      {:cors_plug, "~> 3.0"},
       {:credo, "~> 1.5", only: :test, runtime: false},
       # For Absinthe to load data in batches
       {:dataloader, "~> 1.0.0"},
@@ -79,16 +79,16 @@ defmodule BlockScoutWeb.Mixfile do
       {:ecto, "~> 3.3", override: true},
       {:ex_cldr, "~> 2.18"},
       {:ex_cldr_numbers, "~> 2.6"},
-      {:ex_cldr_units, "~> 2.5"},
-      {:cldr_utils, "~> 2.12"},
+      {:ex_cldr_units, "~> 3.13"},
+      {:cldr_utils, "~> 2.3"},
       {:ex_machina, "~> 2.1", only: [:test]},
       {:explorer, in_umbrella: true},
       {:exvcr, "~> 0.10", only: :test},
       {:file_info, "~> 0.0.4"},
       # HTML CSS selectors for Phoenix controller tests
       {:floki, "~> 0.31"},
-      {:flow, "~> 0.12"},
-      {:gettext, "~> 0.18.2"},
+      {:flow, "~> 1.2"},
+      {:gettext, "~> 0.20.0"},
       {:hammer, "~> 6.0"},
       {:httpoison, "~> 1.6"},
       {:indexer, in_umbrella: true, runtime: false},
@@ -97,26 +97,21 @@ defmodule BlockScoutWeb.Mixfile do
       {:junit_formatter, ">= 0.0.0", only: [:test], runtime: false},
       # Log errors and application output to separate files
       {:logger_file_backend, "~> 0.0.10"},
-      {:math, "~> 0.3.0"},
+      {:math, "~> 0.7.0"},
       {:mock, "~> 0.3.0", only: [:test], runtime: false},
       {:number, "~> 1.0.1"},
       {:phoenix, "== 1.5.13"},
       {:phoenix_ecto, "~> 4.1"},
-      {:phoenix_html, "~> 2.10"},
+      {:phoenix_html, "== 3.0.4"},
       {:phoenix_live_reload, "~> 1.2", only: [:dev]},
       {:phoenix_pubsub, "~> 2.0"},
       # use `:cowboy` for WebServer with `:plug`
       {:plug_cowboy, "~> 2.2"},
       # Waiting for the Pretty Print to be implemented at the Jason lib
       # https://github.com/michalmuskala/jason/issues/15
-      {:poison, "~> 4.0"},
+      {:poison, "~> 4.0.1"},
       {:postgrex, ">= 0.0.0"},
-      # For compatibility with `prometheus_process_collector`, which hasn't been updated yet
-      {:prometheus, "~> 4.0", override: true},
-      # Expose metrics from URL Prometheus server can scrape
-      {:prometheus_plugs, "~> 1.1"},
-      # OS process metrics for Prometheus
-      {:prometheus_process_collector, "~> 1.3"},
+      {:telemetry, "~> 1.0", override: true},
       {:remote_ip, "~> 1.0"},
       {:qrcode, "~> 0.1.0"},
       {:sobelow, ">= 0.11.1", only: [:dev, :test], runtime: false},
@@ -127,17 +122,16 @@ defmodule BlockScoutWeb.Mixfile do
       # `:spandex` tracing of `:phoenix`
       {:spandex_phoenix, "~> 1.0"},
       {:timex, "~> 3.7.1"},
-      {:wallaby, "~> 0.28", only: :test, runtime: false},
+      {:wallaby, "~> 0.30", only: :test, runtime: false},
       # `:cowboy` `~> 2.0` and Phoenix 1.4 compatibility
-      {:websocket_client, "== 1.3.0"},
+      {:websocket_client, "~> 1.3"},
       {:wobserver, "~> 0.2.0", github: "poanetwork/wobserver", branch: "support-https"},
-      {:phoenix_form_awesomplete, "~> 0.1.4"},
-      {:ex_json_schema, "~> 0.6.2"},
+      {:ex_json_schema, "~> 0.9.1"},
+      {:ueberauth, "~> 0.7"},
+      {:ueberauth_auth0, "~> 2.0"},
+      {:bureaucrat, "~> 0.2.9", only: :test},
       # Log json format
-      {:logger_json, "~> 3.2"},
-      # {:jason, "~> 1.1"}
-      # phoenix instrumenter for Phoenix > 1.5 compatibility
-      {:prometheus_phx, github: "theblitzapp/prometheus-phx"}
+      {:logger_json, "~> 3.2"}
     ]
   end
 
@@ -164,7 +158,7 @@ defmodule BlockScoutWeb.Mixfile do
 
   defp package do
     [
-      maintainers: ["POA Networks Ltd."],
+      maintainers: ["Blockscout"],
       licenses: ["GPL 3.0"],
       links: %{"GitHub" => "https://github.com/blockscout/blockscout"}
     ]

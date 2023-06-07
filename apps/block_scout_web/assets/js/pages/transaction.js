@@ -52,6 +52,17 @@ if ($transactionDetailsPage.length) {
   const store = createStore(reducer)
   connectElements({ store, elements })
 
+  const pathParts = window.location.pathname.split('/')
+  const shouldScroll = pathParts.includes('internal-transactions') ||
+  pathParts.includes('token-transfers') ||
+  pathParts.includes('logs') ||
+  pathParts.includes('token-transfers') ||
+  pathParts.includes('raw-trace') ||
+  pathParts.includes('state')
+  if (shouldScroll) {
+    document.getElementById('transaction-tabs').scrollIntoView()
+  }
+
   const blocksChannel = socket.channel('blocks:new_block', {})
   blocksChannel.join()
   blocksChannel.on('new_block', (msg) => store.dispatch({

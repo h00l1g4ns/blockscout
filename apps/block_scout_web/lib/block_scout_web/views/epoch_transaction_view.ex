@@ -1,8 +1,7 @@
 defmodule BlockScoutWeb.EpochTransactionView do
   use BlockScoutWeb, :view
 
-  alias Explorer.Celo.{EpochUtil, Util}
-  alias Explorer.Chain
+  alias Explorer.Celo.EpochUtil
   alias Explorer.Chain.Wei
 
   @visible_rewards_batch_size 20
@@ -15,16 +14,7 @@ defmodule BlockScoutWeb.EpochTransactionView do
   end
 
   def get_reward_currency_address_hash(reward_type) do
-    with {:ok, address_string} <-
-           Util.get_address(
-             case reward_type do
-               "voter" -> "GoldToken"
-               _ -> "StableToken"
-             end
-           ),
-         {:ok, address_hash} <- Chain.string_to_address_hash(address_string) do
-      address_hash
-    end
+    reward_type |> EpochUtil.get_reward_currency_address_hash()
   end
 
   def wei_to_ether_rounded(%Wei{value: value} = amount) do
@@ -34,10 +24,10 @@ defmodule BlockScoutWeb.EpochTransactionView do
       &Decimal.round(
         &1,
         cond do
-          Decimal.cmp(value, Decimal.new(10_000_000_000_000)) == :lt -> 2
-          Decimal.cmp(value, Decimal.new(100_000_000_000_000)) == :lt -> 5
-          Decimal.cmp(value, Decimal.new(1_000_000_000_000_000)) == :lt -> 4
-          Decimal.cmp(value, Decimal.new(10_000_000_000_000_000)) == :lt -> 3
+          Decimal.compare(value, Decimal.new(10_000_000_000_000)) == :lt -> 2
+          Decimal.compare(value, Decimal.new(100_000_000_000_000)) == :lt -> 5
+          Decimal.compare(value, Decimal.new(1_000_000_000_000_000)) == :lt -> 4
+          Decimal.compare(value, Decimal.new(10_000_000_000_000_000)) == :lt -> 3
           true -> 2
         end
       )

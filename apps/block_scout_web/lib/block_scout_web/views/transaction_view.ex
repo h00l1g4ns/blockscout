@@ -2,7 +2,9 @@ defmodule BlockScoutWeb.TransactionView do
   use BlockScoutWeb, :view
 
   alias BlockScoutWeb.{AccessHelpers, AddressView, BlockView, TabHelpers}
+  alias BlockScoutWeb.Account.AuthController
   alias BlockScoutWeb.Cldr.Number
+  alias Explorer.Celo.Util
   alias Explorer.{Chain, CustomContractsHelpers, Repo}
   alias Explorer.Chain.Block.Reward
   alias Explorer.Chain.{Address, Block, InternalTransaction, Transaction, Wei}
@@ -11,10 +13,10 @@ defmodule BlockScoutWeb.TransactionView do
   alias Timex.Duration
 
   import BlockScoutWeb.Gettext
-  import BlockScoutWeb.AddressView, only: [from_address_hash: 1, short_token_id: 2]
+  import BlockScoutWeb.AddressView, only: [from_address_hash: 1, short_token_id: 2, tag_name_to_label: 1]
   import BlockScoutWeb.Tokens.Helpers
 
-  @tabs ["token-transfers", "internal-transactions", "logs", "raw-trace"]
+  @tabs ["token-transfers", "internal-transactions", "logs", "raw-trace", "state"]
 
   @token_burning_title "Token Burning"
   @token_minting_title "Token Minting"
@@ -140,8 +142,7 @@ defmodule BlockScoutWeb.TransactionView do
       token: token_transfer.token,
       amount: nil,
       amounts: [],
-      token_id: token_transfer.token_id,
-      token_ids: [],
+      token_ids: token_transfer.token_ids,
       to_address_hash: token_transfer.to_address_hash,
       from_address_hash: token_transfer.from_address_hash
     }
@@ -155,7 +156,6 @@ defmodule BlockScoutWeb.TransactionView do
       token: token_transfer.token,
       amount: nil,
       amounts: amounts,
-      token_id: nil,
       token_ids: token_transfer.token_ids,
       to_address_hash: token_transfer.to_address_hash,
       from_address_hash: token_transfer.from_address_hash
@@ -169,8 +169,7 @@ defmodule BlockScoutWeb.TransactionView do
       token: token_transfer.token,
       amount: token_transfer.amount,
       amounts: [],
-      token_id: token_transfer.token_id,
-      token_ids: [],
+      token_ids: token_transfer.token_ids,
       to_address_hash: token_transfer.to_address_hash,
       from_address_hash: token_transfer.from_address_hash
     }
@@ -396,7 +395,7 @@ defmodule BlockScoutWeb.TransactionView do
   def gas_used_perc(%Transaction{gas_used: nil}), do: nil
 
   def gas_used_perc(%Transaction{gas_used: gas_used, gas: gas}) do
-    if Decimal.cmp(gas, 0) == :gt do
+    if Decimal.compare(gas, 0) == :gt do
       gas_used
       |> Decimal.div(gas)
       |> Decimal.mult(100)
@@ -528,6 +527,7 @@ defmodule BlockScoutWeb.TransactionView do
   defp tab_name(["internal-transactions"]), do: gettext("Internal Transactions")
   defp tab_name(["logs"]), do: gettext("Logs")
   defp tab_name(["raw-trace"]), do: gettext("Raw Trace")
+  defp tab_name(["state"]), do: gettext("State changes")
 
   defp get_transaction_type_from_token_transfers(token_transfers) do
     token_transfers_types =
@@ -585,7 +585,7 @@ defmodule BlockScoutWeb.TransactionView do
   @doc """
   Decodes revert reason of the transaction.
   """
-  @spec decoded_revert_reason(%Transaction{} | nil) :: binary() | nil
+  @spec decoded_revert_reason(Transaction.t() | nil) :: binary() | nil
   def decoded_revert_reason(transaction) do
     revert_reason = get_pure_transaction_revert_reason(transaction)
 
@@ -610,6 +610,16 @@ defmodule BlockScoutWeb.TransactionView do
 
       _ ->
         hex_revert_reason
+    end
+  end
+
+  def community_fund_address do
+    case(Util.get_address("Governance")) do
+      {:ok, address_string} ->
+        address_string
+
+      _ ->
+        nil
     end
   end
 end

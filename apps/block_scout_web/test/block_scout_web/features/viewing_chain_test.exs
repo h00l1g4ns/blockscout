@@ -6,10 +6,20 @@ defmodule BlockScoutWeb.ViewingChainTest do
     async: false
 
   alias BlockScoutWeb.{AddressPage, BlockPage, ChainPage, TransactionPage}
+
+  alias Explorer.Celo.CacheHelper
   alias Explorer.Chain.Block
   alias Explorer.Counters.AddressesCounter
 
+  import Mox
+
+  setup :set_mox_global
+
   setup do
+    CacheHelper.set_test_addresses(%{
+      "Governance" => "0xD533Ca259b330c7A88f74E000a3FaEa2d63B7972"
+    })
+
     Supervisor.terminate_child(Explorer.Supervisor, Explorer.Chain.Cache.Blocks.child_id())
     Supervisor.restart_child(Explorer.Supervisor, Explorer.Chain.Cache.Blocks.child_id())
 
@@ -133,7 +143,7 @@ defmodule BlockScoutWeb.ViewingChainTest do
       transaction =
         :transaction
         |> insert(to_address: contract_token_address)
-        |> with_block(block)
+        |> with_block(block, status: :ok)
 
       insert_list(
         3,

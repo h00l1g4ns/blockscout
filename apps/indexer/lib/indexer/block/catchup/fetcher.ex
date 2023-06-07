@@ -29,58 +29,41 @@ defmodule Indexer.Block.Catchup.Fetcher do
 
   @behaviour Block.Fetcher
 
-  # These are all the *default* values for options.
-  # DO NOT use them directly in the code.  Get options from `state`.
-
-  @blocks_batch_size 10
-  @blocks_concurrency 10
   @sequence_name :block_catchup_sequencer
 
-  defstruct blocks_batch_size: @blocks_batch_size,
-            blocks_concurrency: @blocks_concurrency,
-            block_fetcher: nil,
+  defstruct block_fetcher: nil,
             memory_monitor: nil
-
-  @doc false
-  def default_blocks_batch_size, do: @blocks_batch_size
 
   @doc """
   Required named arguments
     * `:json_rpc_named_arguments` - `t:EthereumJSONRPC.json_rpc_named_arguments/0` passed to
         `EthereumJSONRPC.json_rpc/2`.
-  The follow options can be overridden:
-    * `:blocks_batch_size` - The number of blocks to request in one call to the JSONRPC.  Defaults to
-      `#{@blocks_batch_size}`.  Block requests also include the transactions for those blocks.  *These transactions
-      are not paginated.*
-    * `:blocks_concurrency` - The number of concurrent requests of `:blocks_batch_size` to allow against the JSONRPC.
-      Defaults to #{@blocks_concurrency}.  So, up to `blocks_concurrency * block_batch_size` (defaults to
-      `#{@blocks_concurrency * @blocks_batch_size}`) blocks can be requested from the JSONRPC at once over all
-      connections.  Up to `block_concurrency * receipts_batch_size * receipts_concurrency` (defaults to
-      `#{@blocks_concurrency * Block.Fetcher.default_receipts_batch_size() * Block.Fetcher.default_receipts_batch_size()}`
-      ) receipts can be requested from the JSONRPC at once over all connections.
   """
   def task(
         %__MODULE__{
-          blocks_batch_size: blocks_batch_size,
           block_fetcher: %Block.Fetcher{json_rpc_named_arguments: json_rpc_named_arguments}
         } = state
       ) do
     Logger.metadata(fetcher: :block_catchup)
 
-    with {:ok, latest_block_number} <- fetch_last_block(json_rpc_named_arguments) do
-      case latest_block_number do
-        # let realtime indexer get the genesis block
-        0 ->
+    with {:ok, ranges} <- block_ranges(json_rpc_named_arguments) do
+      case ranges do
+        # -1 means that latest block is 0, so let realtime indexer get the genesis block
+        [_..-1] ->
           %{first_block_number: 0, missing_block_count: 0, last_block_number: 0, shrunk: false}
 
         _ ->
           # realtime indexer gets the current latest block
-          first = latest_block_number - 1
-          last = last_block()
+          _..first = List.last(ranges)
+          last.._ = List.first(ranges)
 
           Logger.metadata(first_block_number: first, last_block_number: last)
 
-          missing_ranges = Chain.missing_block_number_ranges(first..last)
+          missing_ranges =
+            ranges
+            # let it fetch from newest to oldest block
+            |> Enum.reverse()
+            |> Enum.flat_map(fn f..l -> Chain.missing_block_number_ranges(l..f) end)
 
           range_count = Enum.count(missing_ranges)
 
@@ -100,7 +83,7 @@ defmodule Indexer.Block.Catchup.Fetcher do
                 false
 
               _ ->
-                step = step(first, last, blocks_batch_size)
+                step = step(first, last, blocks_batch_size())
                 sequence_opts = put_memory_monitor([ranges: missing_ranges, step: step], state)
                 gen_server_opts = [name: @sequence_name]
                 {:ok, sequence} = Sequence.start_link(sequence_opts, gen_server_opts)
@@ -119,6 +102,27 @@ defmodule Indexer.Block.Catchup.Fetcher do
           }
       end
     end
+  end
+
+  @doc """
+  The number of blocks to request in one call to the JSONRPC.  Defaults to
+  10.  Block requests also include the transactions for those blocks.  *These transactions
+  are not paginated.
+  """
+  def blocks_batch_size do
+    Application.get_env(:indexer, __MODULE__)[:batch_size]
+  end
+
+  @doc """
+  The number of concurrent requests of `blocks_batch_size` to allow against the JSONRPC.
+  Defaults to 10.  So, up to `blocks_concurrency * block_batch_size` (defaults to
+  `10 * 10`) blocks can be requested from the JSONRPC at once over all
+  connections.  Up to `block_concurrency * receipts_batch_size * receipts_concurrency` (defaults to
+  `#{10 * Block.Fetcher.default_receipts_batch_size() * Block.Fetcher.default_receipts_concurrency()}`
+  ) receipts can be requested from the JSONRPC at once over all connections.
+  """
+  def blocks_concurrency do
+    Application.get_env(:indexer, __MODULE__)[:concurrency]
   end
 
   defp fetch_last_block(json_rpc_named_arguments) do
@@ -173,13 +177,13 @@ defmodule Indexer.Block.Catchup.Fetcher do
     async_import_token_instances(imported)
   end
 
-  defp stream_fetch_and_import(%__MODULE__{blocks_concurrency: blocks_concurrency} = state, sequence)
+  defp stream_fetch_and_import(state, sequence)
        when is_pid(sequence) do
     sequence
     |> Sequence.build_stream()
     |> Task.async_stream(
       &fetch_and_import_range_from_sequence(state, &1, sequence),
-      max_concurrency: blocks_concurrency,
+      max_concurrency: blocks_concurrency(),
       timeout: :infinity
     )
     |> Stream.run()
@@ -343,6 +347,83 @@ defmodule Indexer.Block.Catchup.Fetcher do
     end
   end
 
+  @doc false
+  def block_ranges(json_rpc_named_arguments) do
+    block_ranges_string = Application.get_env(:indexer, :block_ranges)
+
+    ranges =
+      block_ranges_string
+      |> String.split(",")
+      |> Enum.map(fn string_range ->
+        case String.split(string_range, "..") do
+          [from_string, "latest"] ->
+            parse_integer(from_string)
+
+          [from_string, to_string] ->
+            with {from, ""} <- Integer.parse(from_string),
+                 {to, ""} <- Integer.parse(to_string) do
+              if from <= to, do: from..to, else: nil
+            else
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+      end)
+      |> sanitize_ranges()
+
+    case List.last(ranges) do
+      _from.._to ->
+        {:ok, ranges}
+
+      nil ->
+        with {:ok, latest_block_number} <- fetch_last_block(json_rpc_named_arguments) do
+          {:ok, [last_block()..(latest_block_number - 1)]}
+        end
+
+      num ->
+        with {:ok, latest_block_number} <-
+               EthereumJSONRPC.fetch_block_number_by_tag("latest", json_rpc_named_arguments) do
+          {:ok, List.update_at(ranges, -1, fn _ -> num..(latest_block_number - 1) end)}
+        end
+    end
+  end
+
+  defp sanitize_ranges(ranges) do
+    ranges
+    |> Enum.filter(&(not is_nil(&1)))
+    |> Enum.sort_by(
+      fn
+        from.._to -> from
+        el -> el
+      end,
+      :asc
+    )
+    |> Enum.chunk_while(
+      nil,
+      fn
+        _from.._to = chunk, nil ->
+          {:cont, chunk}
+
+        _ch_from..ch_to = chunk, acc_from..acc_to = acc ->
+          if Range.disjoint?(chunk, acc),
+            do: {:cont, acc, chunk},
+            else: {:cont, acc_from..max(ch_to, acc_to)}
+
+        num, nil ->
+          {:halt, num}
+
+        num, acc_from.._ = acc ->
+          if Range.disjoint?(num..num, acc), do: {:cont, acc, num}, else: {:halt, acc_from}
+
+        _, num ->
+          {:halt, num}
+      end,
+      fn reminder -> {:cont, reminder, nil} end
+    )
+  end
+
   defp last_block do
     string_value = Application.get_env(:indexer, :first_block)
 
@@ -362,8 +443,11 @@ defmodule Indexer.Block.Catchup.Fetcher do
 
   defp latest_block do
     string_value = Application.get_env(:indexer, :last_block)
+    parse_integer(string_value)
+  end
 
-    case Integer.parse(string_value) do
+  defp parse_integer(integer_string) do
+    case Integer.parse(integer_string) do
       {integer, ""} -> integer
       _ -> nil
     end

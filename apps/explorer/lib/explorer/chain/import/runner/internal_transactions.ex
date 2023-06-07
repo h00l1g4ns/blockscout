@@ -347,8 +347,8 @@ defmodule Explorer.Chain.Import.Runner.InternalTransactions do
     # json_rpc_named_arguments = Application.fetch_env!(:explorer, :json_rpc_named_arguments)
     variant = Keyword.fetch!(json_rpc_named_arguments, :variant)
 
-    # we exclude first traces from storing in the DB only in case of Parity variant (Parity/Nethermind). Todo: implement the same for Geth
-    if variant == EthereumJSONRPC.Parity do
+    # we exclude first traces from storing in the DB only in case of Nethermind variant (Nethermind/OpenEthereum). Todo: implement the same for Geth
+    if variant == EthereumJSONRPC.Nethermind do
       valid_internal_transactions_without_first_trace =
         valid_internal_transactions
         |> Enum.reject(fn trace ->
@@ -622,7 +622,7 @@ defmodule Explorer.Chain.Import.Runner.InternalTransactions do
   end
 
   defp remove_consensus_of_invalid_blocks(repo, invalid_block_numbers) do
-    minimal_block = first_block_to_fetch()
+    minimal_block = EthereumJSONRPC.first_block_to_fetch(:trace_first_block)
 
     if Enum.count(invalid_block_numbers) > 0 do
       update_query =
@@ -656,10 +656,6 @@ defmodule Explorer.Chain.Import.Runner.InternalTransactions do
     else
       {:ok, []}
     end
-  end
-
-  def first_block_to_fetch do
-    EthereumJSONRPC.first_block_to_fetch(:trace_first_block)
   end
 
   def update_pending_blocks_status(repo, pending_hashes, invalid_block_hashes) do

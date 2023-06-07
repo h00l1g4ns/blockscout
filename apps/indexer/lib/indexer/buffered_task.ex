@@ -185,6 +185,11 @@ defmodule Indexer.BufferedTask do
     GenServer.call(server, :debug_count)
   end
 
+  @doc false
+  def get_state(server, val) do
+    GenServer.call(server, {:get_state, val})
+  end
+
   @doc """
   Starts `callback_module` as a buffered task.
 
@@ -308,6 +313,10 @@ defmodule Indexer.BufferedTask do
     {:reply, %{buffer: count, tasks: Enum.count(task_ref_to_batch)}, state}
   end
 
+  def handle_call({:get_state, key}, _from, state) do
+    {:reply, Map.get(state, key, nil), state}
+  end
+
   def handle_call({:push_back, entries}, _from, state) when is_list(entries) do
     new_state =
       state
@@ -427,7 +436,13 @@ defmodule Indexer.BufferedTask do
         {%BoundQueue{maximum_size: maximum_size} = new_bound_queue, remaining_entries} ->
           Logger.warn(fn ->
             [
-              "BufferedTask #{process(self())} bound queue is at maximum size (#{to_string(maximum_size)}) and #{remaining_entries |> Enum.count() |> to_string()} entries could not be added."
+              "BufferedTask ",
+              process(self()),
+              " bound queue is at maximum size (",
+              to_string(maximum_size),
+              ") and ",
+              remaining_entries |> Enum.count() |> to_string(),
+              " entries could not be added."
             ]
           end)
 
@@ -471,7 +486,9 @@ defmodule Indexer.BufferedTask do
        when maximum_size != nil do
     Logger.info(fn ->
       [
-        "BufferedTask #{process(self())} ran out of work, but work queue was shrunk to save memory, so restoring lost work from `c:init/2`."
+        "BufferedTask ",
+        process(self()),
+        " ran out of work, but work queue was shrunk to save memory, so restoring lost work from `c:init/2`."
       ]
     end)
 

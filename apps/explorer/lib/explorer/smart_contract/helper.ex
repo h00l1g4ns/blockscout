@@ -3,9 +3,11 @@ defmodule Explorer.SmartContract.Helper do
   SmartContract helper functions
   """
 
+  import Ecto.Query
+
   alias Explorer.{Chain, Repo}
   alias Explorer.Chain.SmartContract
-  import Ecto.Query
+  alias Phoenix.HTML
 
   def queriable_method?(method) do
     method["constant"] || method["stateMutability"] == "view" || method["stateMutability"] == "pure"
@@ -45,8 +47,7 @@ defmodule Explorer.SmartContract.Helper do
     types =
       event
       |> Map.get("inputs", [])
-      |> Enum.map(& &1["type"])
-      |> Enum.join(",")
+      |> Enum.map_join(",", & &1["type"])
 
     function_signature = "#{name}(#{types})"
 
@@ -59,8 +60,8 @@ defmodule Explorer.SmartContract.Helper do
   end
 
   @doc "Return all events on contract, return also implementation events if contract is a proxy."
-  def get_all_events(%SmartContract{address_hash: address, abi: abi} = contract) do
-    proxy = Chain.proxy_contract?(address, abi)
+  def get_all_events(%SmartContract{} = contract) do
+    proxy = contract |> SmartContract.proxy_contract?()
 
     events =
       if proxy do
@@ -81,8 +82,8 @@ defmodule Explorer.SmartContract.Helper do
     |> Enum.uniq_by(&Map.get(&1, "topic"))
   end
 
-  defp get_implementation_contract(%SmartContract{address_hash: address_hash, abi: abi}) do
-    implementation_address = Chain.get_implementation_address_hash(address_hash, abi)
+  defp get_implementation_contract(%SmartContract{} = sc) do
+    implementation_address = SmartContract.get_implementation_address_hash(sc)
     {:ok, contract} = get_verified_contract(implementation_address)
     contract
   end
@@ -107,6 +108,68 @@ defmodule Explorer.SmartContract.Helper do
           nil ->
             {:error, "No verified contract found at address #{address_string}"}
         end
+    end
+  end
+
+  def add_contract_code_md5(%{address_hash: address_hash_string} = attrs) when is_binary(address_hash_string) do
+    with {:ok, address_hash} <- Chain.string_to_address_hash(address_hash_string),
+         {:ok, address} <- Chain.hash_to_address(address_hash) do
+      contract_code_md5 = contract_code_md5(address.contract_code.bytes)
+
+      attrs
+      |> Map.put_new(:contract_code_md5, contract_code_md5)
+    else
+      _ -> attrs
+    end
+  end
+
+  def add_contract_code_md5(%{address_hash: address_hash} = attrs) do
+    case Chain.hash_to_address(address_hash) do
+      {:ok, address} ->
+        contract_code_md5 = contract_code_md5(address.contract_code.bytes)
+
+        attrs
+        |> Map.put_new(:contract_code_md5, contract_code_md5)
+
+      _ ->
+        attrs
+    end
+  end
+
+  def add_contract_code_md5(attrs), do: attrs
+
+  def contract_code_md5(bytes) do
+    :md5
+    |> :crypto.hash(bytes)
+    |> Base.encode16(case: :lower)
+  end
+
+  def sanitize_input(nil), do: nil
+
+  def sanitize_input(input) do
+    input
+    |> HTML.html_escape()
+    |> HTML.safe_to_string()
+    |> String.trim()
+  end
+
+  def sol_file?(filename) do
+    case List.last(String.split(String.downcase(filename), ".")) do
+      "sol" ->
+        true
+
+      _ ->
+        false
+    end
+  end
+
+  def json_file?(filename) do
+    case List.last(String.split(String.downcase(filename), ".")) do
+      "json" ->
+        true
+
+      _ ->
+        false
     end
   end
 end

@@ -24,7 +24,7 @@ defmodule BlockScoutWeb.Chain do
     Block,
     InternalTransaction,
     Log,
-    StakingPool,
+    SmartContract,
     Token,
     TokenTransfer,
     Transaction,
@@ -97,22 +97,19 @@ defmodule BlockScoutWeb.Chain do
 
   def next_page_params(_, list, params) do
     next_page_params = Map.merge(params, paging_params(List.last(list)))
-    current_items_count_str = Map.get(next_page_params, "items_count")
-
-    items_count =
-      if current_items_count_str do
-        try do
-          {current_items_count, _} = Integer.parse(current_items_count_str)
-          current_items_count + Enum.count(list)
-        rescue
-          _ -> Enum.count(list)
-        end
-      else
-        Enum.count(list)
-      end
-
-    Map.put(next_page_params, "items_count", items_count)
+    Map.put(next_page_params, "items_count", items_count(next_page_params) + Enum.count(list))
   end
+
+  defp items_count(%{"items_count" => it}) when is_binary(it), do: items_count(%{items_count: it})
+
+  defp items_count(%{items_count: it}) when is_binary(it) do
+    case Integer.parse(it) do
+      {items_count, _} -> items_count
+      :error -> 0
+    end
+  end
+
+  defp items_count(_), do: 0
 
   def paging_options(%{"hash" => hash, "fetched_coin_balance" => fetched_coin_balance}) do
     with {coin_balance, ""} <- Integer.parse(fetched_coin_balance),
@@ -230,6 +227,10 @@ defmodule BlockScoutWeb.Chain do
     [paging_options: %{@default_paging_options | key: {reward_type}}]
   end
 
+  def paging_options(%{"smart_contract_id" => id}) do
+    [paging_options: %{@default_paging_options | key: {id}}]
+  end
+
   def paging_options(_params), do: [paging_options: @default_paging_options]
 
   def put_key_value_to_paging_options([paging_options: paging_options], key, value) do
@@ -244,6 +245,11 @@ defmodule BlockScoutWeb.Chain do
       _ ->
         1
     end
+  end
+
+  def fetch_page_number(%{"items_count" => item_count_str}) do
+    {items_count, _} = Integer.parse(item_count_str)
+    div(items_count, @page_size) + 1
   end
 
   def fetch_page_number(_), do: 1
@@ -355,7 +361,7 @@ defmodule BlockScoutWeb.Chain do
     %{"address_hash" => to_string(address_hash), "value" => Decimal.to_integer(value)}
   end
 
-  defp paging_params({%CurrentTokenBalance{value: value}, _, %Token{name: name, type: type}}) do
+  defp paging_params({%CurrentTokenBalance{value: value}, %Token{name: name, type: type}}) do
     %{"token_name" => name, "token_type" => type, "value" => Decimal.to_integer(value)}
   end
 
@@ -367,8 +373,8 @@ defmodule BlockScoutWeb.Chain do
     %{"reward_type" => reward_type}
   end
 
-  defp paging_params(%StakingPool{staking_address_hash: address_hash, stakes_ratio: value}) do
-    %{"address_hash" => address_hash, "value" => Decimal.to_string(value)}
+  defp paging_params(%SmartContract{} = smart_contract) do
+    %{"smart_contract_id" => smart_contract.id}
   end
 
   defp paging_params(%{

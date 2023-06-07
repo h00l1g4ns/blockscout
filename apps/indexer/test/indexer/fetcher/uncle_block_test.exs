@@ -29,7 +29,7 @@ defmodule Indexer.Fetcher.UncleBlockTest do
         transport: EthereumJSONRPC.Mox,
         transport_options: [],
         # Which one does not matter, so pick one
-        variant: EthereumJSONRPC.Parity
+        variant: EthereumJSONRPC.Nethermind
       ]
     }
   end
@@ -199,7 +199,8 @@ defmodule Indexer.Fetcher.UncleBlockTest do
          ]}
       end)
 
-      assert {:retry, _} = UncleBlock.run(entries, %Block.Fetcher{json_rpc_named_arguments: json_rpc_named_arguments})
+      assert {:retry, [^entry]} =
+               UncleBlock.run(entries, %Block.Fetcher{json_rpc_named_arguments: json_rpc_named_arguments})
     end
   end
 

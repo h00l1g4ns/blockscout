@@ -5,40 +5,37 @@ defmodule Explorer.Application do
 
   use Application
 
-  alias Explorer.Admin
+  alias Explorer.{Admin, TokenTransferTokenIdMigration}
 
   alias Explorer.Chain.Cache.{
     Accounts,
     AddressSum,
     AddressSumMinusBurnt,
-    BlockCount,
+    Block,
     BlockNumber,
     Blocks,
+    GasPriceOracle,
     MinMissingBlockNumber,
     NetVersion,
+    Transaction,
     Transactions,
+    TransactionsApiV2,
     Uncles
   }
 
   alias Explorer.Chain.Supply.RSK
 
   alias Explorer.Market.MarketHistoryCache
-  alias Explorer.Repo.PrometheusLogger
 
   @impl Application
   def start(_type, _args) do
-    PrometheusLogger.setup()
-
-    :telemetry.attach(
-      "prometheus-ecto",
-      [:explorer, :repo, :query],
-      &PrometheusLogger.handle_event/4,
-      %{}
-    )
-
     # Children to start in all environments
     base_children = [
-      Explorer.Repo,
+      {Fly.RPC, []},
+      Explorer.Repo.Local,
+      {Fly.Postgres.LSN.Supervisor, repo: Explorer.Repo.Local},
+      Explorer.Repo.Account,
+      Explorer.Vault,
       Supervisor.child_spec({SpandexDatadog.ApiServer, datadog_opts()}, id: SpandexDatadog.ApiServer),
       Supervisor.child_spec({Task.Supervisor, name: Explorer.HistoryTaskSupervisor}, id: Explorer.HistoryTaskSupervisor),
       Supervisor.child_spec({Task.Supervisor, name: Explorer.MarketTaskSupervisor}, id: Explorer.MarketTaskSupervisor),
@@ -48,24 +45,28 @@ defmodule Explorer.Application do
       Explorer.SmartContract.VyperDownloader,
       {Registry, keys: :duplicate, name: Registry.ChainEvents, id: Registry.ChainEvents},
       {Admin.Recovery, [[], [name: Admin.Recovery]]},
+      Transaction,
       AddressSum,
       AddressSumMinusBurnt,
-      BlockCount,
+      Block,
       Blocks,
+      GasPriceOracle,
       NetVersion,
       BlockNumber,
       con_cache_child_spec(MarketHistoryCache.cache_name()),
       con_cache_child_spec(RSK.cache_name(), ttl_check_interval: :timer.minutes(1), global_ttl: :timer.minutes(30)),
       Transactions,
+      TransactionsApiV2,
       Accounts,
       Uncles,
       Supervisor.child_spec({Phoenix.PubSub, name: :chain_pubsub}, id: :chain_pubsub),
-      Supervisor.child_spec({Phoenix.PubSub, name: :operations}, id: :operations)
+      Supervisor.child_spec({Phoenix.PubSub, name: :operations}, id: :operations),
+      {Redix, redix_opts()}
     ]
 
     children = base_children ++ configurable_children()
 
-    opts = [strategy: :one_for_one, name: Explorer.Supervisor]
+    opts = [strategy: :one_for_one, name: Explorer.Supervisor, max_restarts: 1_000]
 
     Supervisor.start_link(children, opts)
   end
@@ -75,30 +76,47 @@ defmodule Explorer.Application do
       configure(Explorer.ExchangeRates),
       configure(Explorer.ChainSpec.GenesisData),
       configure(Explorer.KnownTokens),
-      configure(Explorer.Market.History.Cataloger),
-      configure(Explorer.Chain.Cache.TokenExchangeRate),
-      configure(Explorer.Chain.Transaction.History.Historian),
       configure(Explorer.Chain.Events.Listener),
-      configure(Explorer.Counters.AddressesWithBalanceCounter),
-      configure(Explorer.Counters.AddressesCounter),
-      configure(Explorer.Counters.AddressTransactionsCounter),
-      configure(Explorer.Counters.AddressTokenTransfersCounter),
-      configure(Explorer.Counters.AddressTransactionsGasUsageCounter),
-      configure(Explorer.Counters.AddressTokenUsdSum),
-      configure(Explorer.Counters.TokenHoldersCounter),
-      configure(Explorer.Counters.TokenTransfersCounter),
-      configure(Explorer.Counters.BlockBurnedFeeCounter),
-      configure(Explorer.Counters.BlockPriorityFeeCounter),
-      configure(Explorer.Counters.AverageBlockTime),
       configure(Explorer.Celo.AbiHandler),
       configure(Explorer.Celo.CoreContracts),
       configure(Explorer.Celo.SignerCache),
       configure(Explorer.Counters.Bridge),
       configure(Explorer.Validator.MetadataProcessor),
-      configure(Explorer.Staking.ContractState),
-      configure(MinMissingBlockNumber)
+      configure(Explorer.Tags.AddressTag.Cataloger),
+      configure(MinMissingBlockNumber),
+      configure(TokenTransferTokenIdMigration.Supervisor)
     ]
+    |> Enum.concat(children_with_write_access())
     |> List.flatten()
+  end
+
+  # child processes which write to the db after being added to the supervision tree (e.g. periodic caches, counters, etc)
+  # these cause noisy failures when connected to replica db
+  defp children_with_write_access do
+    if System.get_env("DISABLE_DB_WRITE", nil) == nil do
+      [
+        configure(Explorer.Market.History.Cataloger),
+        configure(Explorer.Chain.Cache.TokenExchangeRate),
+        configure(Explorer.Chain.Cache.ContractsCounter),
+        configure(Explorer.Chain.Cache.NewContractsCounter),
+        configure(Explorer.Chain.Cache.VerifiedContractsCounter),
+        configure(Explorer.Chain.Cache.NewVerifiedContractsCounter),
+        configure(Explorer.Chain.Transaction.History.Historian),
+        configure(Explorer.Counters.AddressesWithBalanceCounter),
+        configure(Explorer.Counters.AddressesCounter),
+        configure(Explorer.Counters.AddressTransactionsCounter),
+        configure(Explorer.Counters.AddressTokenTransfersCounter),
+        configure(Explorer.Counters.AddressTransactionsGasUsageCounter),
+        configure(Explorer.Counters.AddressTokenUsdSum),
+        configure(Explorer.Counters.TokenHoldersCounter),
+        configure(Explorer.Counters.TokenTransfersCounter),
+        configure(Explorer.Counters.BlockBurnedFeeCounter),
+        configure(Explorer.Counters.BlockPriorityFeeCounter),
+        configure(Explorer.Counters.AverageBlockTime)
+      ]
+    else
+      []
+    end
   end
 
   defp should_start?(process) do
@@ -181,5 +199,9 @@ defmodule Explorer.Application do
       },
       id: {ConCache, name}
     )
+  end
+
+  defp redix_opts do
+    {System.get_env("ACCOUNT_REDIS_URL") || "redis://127.0.0.1:6379", [name: :redix]}
   end
 end

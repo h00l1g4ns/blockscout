@@ -14,6 +14,9 @@ defmodule Indexer.Fetcher.BlockRewardTest do
 
   @moduletag :capture_log
 
+  # no block rewards in celo protocol
+  @moduletag :celo_exclude
+
   # MUST use global mode because we aren't guaranteed to get `start_supervised`'s pid back fast enough to `allow` it to
   # use expectations and stubs from test's pid.
   setup :set_mox_global
@@ -30,7 +33,7 @@ defmodule Indexer.Fetcher.BlockRewardTest do
         transport: EthereumJSONRPC.Mox,
         transport_options: [],
         # Which one does not matter, so pick one
-        variant: EthereumJSONRPC.Parity
+        variant: EthereumJSONRPC.Nethermind
       ]
     }
   end
@@ -117,7 +120,7 @@ defmodule Indexer.Fetcher.BlockRewardTest do
         }
       end)
 
-      eth_block_number_fake_response(block_quantity)
+      _res = eth_block_number_fake_response(block_quantity)
 
       assert count(Chain.Block.Reward) == 0
 
@@ -192,7 +195,7 @@ defmodule Indexer.Fetcher.BlockRewardTest do
         }
       end)
 
-      eth_block_number_fake_response(block_quantity)
+      _res = eth_block_number_fake_response(block_quantity)
 
       parent = self()
 
@@ -324,7 +327,7 @@ defmodule Indexer.Fetcher.BlockRewardTest do
         }
       end)
 
-      eth_block_number_fake_response(block_quantity)
+      _res = eth_block_number_fake_response(block_quantity)
 
       assert count(Chain.Block.Reward) == 0
       assert count(Chain.Address.CoinBalance) == 0
@@ -414,7 +417,7 @@ defmodule Indexer.Fetcher.BlockRewardTest do
         }
       end)
 
-      eth_block_number_fake_response(block_quantity)
+      _res = eth_block_number_fake_response(block_quantity)
 
       assert count(Chain.Block.Reward) == 0
       assert count(Chain.Address.CoinBalance) == 0
@@ -494,7 +497,7 @@ defmodule Indexer.Fetcher.BlockRewardTest do
         }
       end)
 
-      eth_block_number_fake_response(block_quantity)
+      _res = eth_block_number_fake_response(block_quantity)
 
       assert count(Chain.Block.Reward) == 1
       assert count(Chain.Address.CoinBalance) == 1
@@ -635,7 +638,7 @@ defmodule Indexer.Fetcher.BlockRewardTest do
         }
       end)
 
-      eth_block_number_fake_response(block_quantity)
+      _res = eth_block_number_fake_response(block_quantity)
 
       assert count(Chain.Block.Reward) == 0
       assert count(Chain.Address.CoinBalance) == 0

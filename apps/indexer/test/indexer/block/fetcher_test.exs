@@ -103,7 +103,7 @@ defmodule Indexer.Block.FetcherTest do
 
       if json_rpc_named_arguments[:transport] == EthereumJSONRPC.Mox do
         case Keyword.fetch!(json_rpc_named_arguments, :variant) do
-          EthereumJSONRPC.Parity ->
+          EthereumJSONRPC.Nethermind ->
             block_quantity = integer_to_quantity(block_number)
             from_address_hash = "0xe8ddc5c7a2d2f0d7a9798459c0104fdf5e987aca"
             to_address_hash = "0x8bf38d4764929064f2d4d3a56520a76ab3df415b"
@@ -119,7 +119,7 @@ defmodule Indexer.Block.FetcherTest do
               unprefixed_celo_token_address_hash,
               event_first_topic,
               event_data,
-              18
+              17
             )
 
           variant ->
@@ -232,7 +232,7 @@ defmodule Indexer.Block.FetcherTest do
           assert fifth_address.fetched_coin_balance == %Wei{value: Decimal.new(930_417_572_224_879_702_000)}
           assert fifth_address.fetched_coin_balance_block_number == block_number
 
-        EthereumJSONRPC.Parity ->
+        EthereumJSONRPC.Nethermind ->
           assert {:ok,
                   %{
                     inserted: %{
@@ -332,11 +332,10 @@ defmodule Indexer.Block.FetcherTest do
       set_test_address(to_string(celo_token_address.hash))
 
       block_number = @first_full_block_number
-      #          insert(:celo_unlocked, %{account_address: "0xC257274276a4E539741Ca11b590B9447B26A8051", amount: 3840})
 
       if json_rpc_named_arguments[:transport] == EthereumJSONRPC.Mox do
         case Keyword.fetch!(json_rpc_named_arguments, :variant) do
-          EthereumJSONRPC.Parity ->
+          EthereumJSONRPC.Nethermind ->
             block_quantity = integer_to_quantity(block_number)
             from_address_hash = "0xe8ddc5c7a2d2f0d7a9798459c0104fdf5e987aca"
             to_address_hash = "0x8bf38d4764929064f2d4d3a56520a76ab3df415b"
@@ -363,7 +362,7 @@ defmodule Indexer.Block.FetcherTest do
       end
 
       case Keyword.fetch!(json_rpc_named_arguments, :variant) do
-        EthereumJSONRPC.Parity ->
+        EthereumJSONRPC.Nethermind ->
           assert {:ok,
                   %{
                     inserted: %{
@@ -452,7 +451,7 @@ defmodule Indexer.Block.FetcherTest do
 
       if json_rpc_named_arguments[:transport] == EthereumJSONRPC.Mox do
         case Keyword.fetch!(json_rpc_named_arguments, :variant) do
-          EthereumJSONRPC.Parity ->
+          EthereumJSONRPC.Nethermind ->
             block_quantity = integer_to_quantity(block_number)
             from_address_hash = "0xe8ddc5c7a2d2f0d7a9798459c0104fdf5e987aca"
             to_address_hash = "0x8bf38d4764929064f2d4d3a56520a76ab3df415b"
@@ -477,7 +476,7 @@ defmodule Indexer.Block.FetcherTest do
       end
 
       case Keyword.fetch!(json_rpc_named_arguments, :variant) do
-        EthereumJSONRPC.Parity ->
+        EthereumJSONRPC.Nethermind ->
           assert {:ok,
                   %{
                     inserted: %{
@@ -606,7 +605,7 @@ defmodule Indexer.Block.FetcherTest do
 
              %{id: id, method: "trace_block"} ->
                block_quantity = integer_to_quantity(block_number)
-               eth_block_number_fake_response(block_quantity)
+               _res = eth_block_number_fake_response(block_quantity)
 
                %{
                  id: id,
@@ -653,7 +652,7 @@ defmodule Indexer.Block.FetcherTest do
         end)
       end
 
-      assert {:ok, %{errors: [], inserted: %{block_rewards: _}}} =
+      assert {:ok, %{errors: [], inserted: %{block_rewards: _block_rewards}}} =
                Fetcher.fetch_and_import_range(block_fetcher, block_number..block_number)
 
       assert Repo.one!(select(Chain.Block.Reward, fragment("COUNT(*)"))) == 2

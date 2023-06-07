@@ -2,9 +2,22 @@ defmodule BlockScoutWeb.TransactionControllerTest do
   use BlockScoutWeb.ConnCase
 
   import BlockScoutWeb.WebRouter.Helpers,
-    only: [transaction_path: 3, transaction_internal_transaction_path: 3, transaction_token_transfer_path: 3]
+    only: [transaction_path: 3]
 
+  import Mox
+
+  alias Explorer.Celo.CacheHelper
   alias Explorer.Chain.Transaction
+
+  setup :set_mox_global
+
+  setup do
+    CacheHelper.set_test_addresses(%{
+      "Governance" => "0xD533Ca259b330c7A88f74E000a3FaEa2d63B7972"
+    })
+
+    :ok
+  end
 
   describe "GET index/2" do
     test "returns a collated transactions", %{conn: conn} do
@@ -127,22 +140,11 @@ defmodule BlockScoutWeb.TransactionControllerTest do
       assert html_response(conn, 422)
     end
 
-    test "redirects to transactions/:transaction_id/token-transfers when there are token transfers", %{conn: conn} do
-      transaction = insert(:transaction)
-      block = insert(:block)
-      insert(:token_transfer, transaction: transaction, block: block)
-      conn = get(conn, transaction_path(BlockScoutWeb.Endpoint, :show, transaction))
-
-      assert redirected_to(conn) =~ transaction_token_transfer_path(BlockScoutWeb.Endpoint, :index, transaction)
-    end
-
-    test "redirects to transactions/:transaction_id/internal-transactions when there are no token transfers", %{
-      conn: conn
-    } do
+    test "no redirect from tx page", %{conn: conn} do
       transaction = insert(:transaction)
       conn = get(conn, transaction_path(BlockScoutWeb.Endpoint, :show, transaction))
 
-      assert redirected_to(conn) =~ transaction_internal_transaction_path(BlockScoutWeb.Endpoint, :index, transaction)
+      assert html_response(conn, 200)
     end
   end
 end

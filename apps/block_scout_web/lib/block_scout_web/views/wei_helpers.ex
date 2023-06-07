@@ -59,7 +59,7 @@ defmodule BlockScoutWeb.WeiHelpers do
       |> Wei.to(unit)
 
     formatted_value =
-      if Decimal.cmp(converted_value, 1_000_000_000_000) == :gt do
+      if Decimal.compare(converted_value, 1_000_000_000_000) == :gt do
         CldrHelper.Number.to_string!(converted_value, format: "0.###E+0")
       else
         CldrHelper.Number.to_string!(converted_value, format: "#,##0.##################")
@@ -77,5 +77,5 @@ defmodule BlockScoutWeb.WeiHelpers do
 
   defp display_unit(:wei), do: gettext("Wei")
   defp display_unit(:gwei), do: gettext("Gwei")
-  defp display_unit(:ether), do: gettext("CELO")
+  defp display_unit(:ether), do: Explorer.coin_name()
 end

@@ -24,25 +24,25 @@ defmodule BlockScoutWeb.API.RPC.RPCTranslator do
   alias Phoenix.Controller
   alias Plug.Conn
 
-  APILogger.message(
-    "Current global API rate limit #{inspect(Application.get_env(:block_scout_web, :api_rate_limit)[:global_limit])} reqs/sec"
-  )
+  def init(opts) do
+    ensure_rpc_modules_loaded()
+    opts
+  end
 
-  APILogger.message(
-    "Current API rate limit by key #{inspect(Application.get_env(:block_scout_web, :api_rate_limit)[:limit_by_key])} reqs/sec"
-  )
+  defp ensure_rpc_modules_loaded do
+    modules = Application.get_env(:block_scout_web, :rpc_module_map)
 
-  APILogger.message(
-    "Current API rate limit by IP #{inspect(Application.get_env(:block_scout_web, :api_rate_limit)[:limit_by_ip])} reqs/sec"
-  )
-
-  def init(opts), do: opts
+    modules
+    |> Enum.each(fn {_key, {module, _params}} ->
+      Code.ensure_loaded!(module)
+    end)
+  end
 
   def call(%Conn{params: %{"module" => module, "action" => action}} = conn, translations) do
     with :valid <- valid_api_request_path(conn),
          {:ok, {controller, write_actions}} <- translate_module(translations, module),
          {:ok, action} <- translate_action(action),
-         true <- action_accessed?(action, write_actions),
+         true <- action_permitted?(action, write_actions),
          :ok <- AccessHelpers.check_rate_limit(conn),
          {:ok, conn} <- call_controller(conn, controller, action) do
       APILogger.log(conn)
@@ -97,8 +97,11 @@ defmodule BlockScoutWeb.API.RPC.RPCTranslator do
     module_lowercase = String.downcase(module)
 
     case Map.fetch(translations, module_lowercase) do
-      {:ok, module} -> {:ok, module}
-      _ -> {:error, :no_action}
+      {:ok, module} ->
+        {:ok, module}
+
+      _ ->
+        {:error, :no_action}
     end
   end
 
@@ -108,16 +111,17 @@ defmodule BlockScoutWeb.API.RPC.RPCTranslator do
     action_lowercase = String.downcase(action)
     {:ok, String.to_existing_atom(action_lowercase)}
   rescue
-    ArgumentError -> {:error, :no_action}
+    _error ->
+      {:error, :no_action}
   end
 
-  defp action_accessed?(action, write_actions) do
+  defp action_permitted?(action, write_actions) do
     conf = Application.get_env(:block_scout_web, BlockScoutWeb.ApiRouter)
 
     if action in write_actions do
-      conf[:writing_enabled] || {:error, :no_action}
+      conf[:writing_enabled] || {:error, :write_not_permitted}
     else
-      conf[:reading_enabled] || {:error, :no_action}
+      conf[:reading_enabled] || {:error, :read_not_permitted}
     end
   end
 

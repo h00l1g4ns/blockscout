@@ -6,26 +6,6 @@ defmodule BlockScoutWeb.LayoutView do
   alias Poison.Parser
   import BlockScoutWeb.AddressView, only: [from_address_hash: 1]
 
-  @issue_url "https://github.com/celo-org/celo-monorepo/issues/new"
-
-  @default_other_networks [
-    %{
-      title: "Celo Mainnet",
-      url: "https://explorer.celo.org/mainnet",
-      test_net?: false
-    },
-    %{
-      title: "Celo Alfajores",
-      url: "https://explorer.celo.org/alfajores",
-      test_net?: true
-    },
-    %{
-      title: "Celo Baklava",
-      url: "https://explorer.celo.org/baklava",
-      test_net?: true
-    }
-  ]
-
   alias BlockScoutWeb.SocialMedia
 
   def logo do
@@ -63,7 +43,9 @@ defmodule BlockScoutWeb.LayoutView do
       title: subnetwork_title() <> ": <Issue Title>"
     ]
 
-    [@issue_url, "?", URI.encode_query(params)]
+    issue_url = "#{Application.get_env(:block_scout_web, :footer)[:github_link]}/issues/new"
+
+    [issue_url, "?", URI.encode_query(params)]
   end
 
   defp issue_body(conn) do
@@ -136,19 +118,7 @@ defmodule BlockScoutWeb.LayoutView do
   def ignore_version?(_), do: false
 
   def other_networks do
-    get_other_networks =
-      if Application.get_env(:block_scout_web, :other_networks) do
-        try do
-          :block_scout_web
-          |> Application.get_env(:other_networks)
-          |> Parser.parse!(%{keys: :atoms!})
-        rescue
-          _ ->
-            []
-        end
-      else
-        @default_other_networks
-      end
+    get_other_networks = list(:other_networks)
 
     get_other_networks
     |> Enum.reject(fn %{title: title} ->
@@ -207,7 +177,10 @@ defmodule BlockScoutWeb.LayoutView do
       try do
         :block_scout_web
         |> Application.get_env(component)
-        |> Parser.parse!(%{keys: :atoms!})
+        |> then(fn
+          n when is_list(n) -> n
+          str -> Parser.parse!(str, %{keys: :atoms!})
+        end)
       rescue
         _ ->
           []
@@ -283,21 +256,6 @@ defmodule BlockScoutWeb.LayoutView do
     end
   end
 
-  def external_apps_list do
-    if Application.get_env(:block_scout_web, :external_apps) do
-      try do
-        :block_scout_web
-        |> Application.get_env(:external_apps)
-        |> Parser.parse!(%{keys: :atoms!})
-      rescue
-        _ ->
-          []
-      end
-    else
-      []
-    end
-  end
-
   defp validate_url(url) when is_binary(url) do
     case URI.parse(url) do
       %URI{host: nil} -> :error
@@ -306,4 +264,29 @@ defmodule BlockScoutWeb.LayoutView do
   end
 
   defp validate_url(_), do: :error
+
+  def sign_in_link do
+    if Mix.env() == :test do
+      "/auth/auth0"
+    else
+      Application.get_env(:block_scout_web, BlockScoutWeb.Endpoint)[:url][:path] <> "/auth/auth0"
+    end
+  end
+
+  def sign_out_link do
+    client_id = Application.get_env(:ueberauth, Ueberauth.Strategy.Auth0.OAuth)[:client_id]
+    return_to = Application.get_env(:ueberauth, Ueberauth)[:logout_return_to_url]
+    logout_url = Application.get_env(:ueberauth, Ueberauth)[:logout_url]
+
+    if client_id && return_to && logout_url do
+      params = [
+        client_id: client_id,
+        returnTo: return_to
+      ]
+
+      [logout_url, "?", URI.encode_query(params)]
+    else
+      []
+    end
+  end
 end

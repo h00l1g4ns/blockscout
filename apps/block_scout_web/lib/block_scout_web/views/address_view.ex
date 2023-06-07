@@ -4,10 +4,12 @@ defmodule BlockScoutWeb.AddressView do
   require Logger
 
   alias BlockScoutWeb.{AccessHelpers, LayoutView}
-  alias Explorer.{Chain, CustomContractsHelpers}
+  alias Explorer.Account.CustomABI
+  alias Explorer.{Chain, CustomContractsHelpers, Repo}
 
   alias Explorer.Chain.{
     Address,
+    CeloElectionRewards,
     CeloSigners,
     CeloValidator,
     CeloValidatorHistory,
@@ -24,6 +26,8 @@ defmodule BlockScoutWeb.AddressView do
   alias Explorer.Chain.Block.Reward
   alias Explorer.ExchangeRates.Token, as: TokenExchangeRate
   alias Explorer.SmartContract.{Helper, Writer}
+
+  import BlockScoutWeb.Account.AuthController, only: [current_user: 1]
 
   @dialyzer :no_match
 
@@ -47,6 +51,10 @@ defmodule BlockScoutWeb.AddressView do
 
   def celo_account?(address) do
     address.celo_account != nil and Ecto.assoc_loaded?(address.celo_account)
+  end
+
+  def should_display_epoch_transactions_tab?(address) do
+    CeloElectionRewards.reward_for_address_hash_exists?(address.hash)
   end
 
   def address_partial_selector(struct_to_render_from, direction, current_address, truncate \\ false)
@@ -155,14 +163,6 @@ defmodule BlockScoutWeb.AddressView do
     matching_address_check(current_address, address, false, truncate)
   end
 
-  def address_title(%Address{} = address) do
-    if contract?(address) do
-      gettext("Contract Address")
-    else
-      gettext("Address")
-    end
-  end
-
   @doc """
   Returns a formatted address balance and includes the unit.
   """
@@ -190,7 +190,7 @@ defmodule BlockScoutWeb.AddressView do
       do: ""
 
   def balance_percentage(%Address{fetched_coin_balance: balance}, total_supply) do
-    if Decimal.cmp(total_supply, 0) == :gt do
+    if Decimal.compare(total_supply, 0) == :gt do
       balance
       |> Wei.to(:ether)
       |> Decimal.div(Decimal.new(total_supply))
@@ -240,18 +240,38 @@ defmodule BlockScoutWeb.AddressView do
   end
 
   @doc """
-  Returns the primary name of an address if available.
+  Returns the primary name of an address if available. If there is no names on address function performs preload of names association.
   """
   def primary_name(%Address{names: [_ | _] = address_names}) do
     case Enum.find(address_names, &(&1.primary == true)) do
-      nil -> nil
-      %Address.Name{name: name} -> name
+      nil ->
+        %Address.Name{name: name} = Enum.at(address_names, 0)
+        name
+
+      %Address.Name{name: name} ->
+        name
     end
   end
 
-  def primary_name(%Address{names: _} = _address) do
-    nil
+  def primary_name(%Address{names: %Ecto.Association.NotLoaded{}} = address) do
+    primary_name(Repo.preload(address, [:names]))
   end
+
+  def primary_name(%Address{names: _} = address) do
+    with false <- is_nil(address.contract_code),
+         twin <- Chain.get_verified_twin_contract(address),
+         false <- is_nil(twin) do
+      twin.name
+    else
+      _ ->
+        nil
+    end
+  end
+
+  def implementation_name(%Address{smart_contract: %{implementation_name: implementation_name}}),
+    do: implementation_name
+
+  def implementation_name(_), do: nil
 
   def primary_validator_metadata(%Address{names: [_ | _] = address_names}) do
     case Enum.find(address_names, &(&1.primary == true)) do
@@ -295,22 +315,22 @@ defmodule BlockScoutWeb.AddressView do
   def smart_contract_verified?(%Address{smart_contract: nil}), do: false
 
   def smart_contract_with_read_only_functions?(%Address{smart_contract: %SmartContract{}} = address) do
-    Enum.any?(address.smart_contract.abi, &is_read_function?(&1))
+    Enum.any?(address.smart_contract.abi || [], &is_read_function?(&1))
   end
 
   def smart_contract_with_read_only_functions?(%Address{smart_contract: nil}), do: false
 
   def is_read_function?(function), do: Helper.queriable_method?(function) || Helper.read_with_wallet_method?(function)
 
-  def smart_contract_is_proxy?(%Address{smart_contract: %SmartContract{}} = address) do
-    Chain.proxy_contract?(address.hash, address.smart_contract.abi)
+  def smart_contract_is_proxy?(%Address{smart_contract: %SmartContract{} = smart_contract}) do
+    SmartContract.proxy_contract?(smart_contract)
   end
 
   def smart_contract_is_proxy?(%Address{smart_contract: nil}), do: false
 
   def smart_contract_with_write_functions?(%Address{smart_contract: %SmartContract{}} = address) do
     Enum.any?(
-      address.smart_contract.abi,
+      address.smart_contract.abi || [],
       &Writer.write_function?(&1)
     )
   end
@@ -501,21 +521,34 @@ defmodule BlockScoutWeb.AddressView do
 
   def smart_contract_is_gnosis_safe_proxy?(_address), do: false
 
-  def is_omni_bridge?(nil), do: false
-
-  def is_omni_bridge?(address_hash) do
-    address_hash_str = "0x" <> Base.encode16(address_hash.bytes, case: :lower)
-
-    address_hash_str == String.downcase(System.get_env("ETH_OMNI_BRIDGE_MEDIATOR", "")) ||
-      address_hash_str == String.downcase(System.get_env("BSC_OMNI_BRIDGE_MEDIATOR", ""))
+  def tag_name_to_label(tag_name) do
+    tag_name
+    |> String.replace(" ", "-")
   end
 
-  def is_amb_bridge?(nil), do: false
-
-  def is_amb_bridge?(address_hash) do
-    address_hash_str = "0x" <> Base.encode16(address_hash.bytes, case: :lower)
-    String.downcase(System.get_env("AMB_BRIDGE_MEDIATORS", "")) =~ address_hash_str
+  def fetch_custom_abi(conn, address_hash) do
+    if current_user = current_user(conn) do
+      CustomABI.get_custom_abi_by_identity_id_and_address_hash(address_hash, current_user.id)
+    end
   end
+
+  def has_address_custom_abi_with_read_functions?(conn, address_hash) do
+    custom_abi = fetch_custom_abi(conn, address_hash)
+
+    check_custom_abi_for_having_read_functions(custom_abi)
+  end
+
+  def check_custom_abi_for_having_read_functions(custom_abi),
+    do: !is_nil(custom_abi) && Enum.any?(custom_abi.abi, &is_read_function?(&1))
+
+  def has_address_custom_abi_with_write_functions?(conn, address_hash) do
+    custom_abi = fetch_custom_abi(conn, address_hash)
+
+    check_custom_abi_for_having_write_functions(custom_abi)
+  end
+
+  def check_custom_abi_for_having_write_functions(custom_abi),
+    do: !is_nil(custom_abi) && Enum.any?(custom_abi.abi, &Writer.write_function?(&1))
 
   def wei_to_ether_rounded(amount), do: amount |> Wei.to(:ether) |> then(&Decimal.round(&1, 2))
 end

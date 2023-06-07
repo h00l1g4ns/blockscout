@@ -4,8 +4,10 @@ defmodule BlockScoutWeb.BlockChannel do
   """
   use BlockScoutWeb, :channel
 
+  alias BlockScoutWeb.API.V2.BlockView, as: BlockViewAPI
   alias BlockScoutWeb.{BlockView, ChainView}
   alias Phoenix.View
+  alias Timex.Duration
 
   intercept(["new_block"])
 
@@ -17,23 +19,25 @@ defmodule BlockScoutWeb.BlockChannel do
     {:ok, %{}, socket}
   end
 
+  def handle_out(
+        "new_block",
+        %{block: block, average_block_time: average_block_time},
+        %Phoenix.Socket{handler: BlockScoutWeb.UserSocketV2} = socket
+      ) do
+    rendered_block = BlockViewAPI.render("block.json", %{block: block, socket: nil})
+
+    push(socket, "new_block", %{
+      average_block_time: to_string(Duration.to_milliseconds(average_block_time)),
+      block: rendered_block
+    })
+
+    {:noreply, socket}
+  end
+
   def handle_out("new_block", %{block: block, average_block_time: average_block_time}, socket) do
     Gettext.put_locale(BlockScoutWeb.Gettext, socket.assigns.locale)
 
-    rendered_block =
-      View.render_to_string(
-        BlockView,
-        "_tile.html",
-        block: block,
-        block_type: BlockView.block_type(block)
-      )
-
-    rendered_chain_block =
-      View.render_to_string(
-        ChainView,
-        "_block.html",
-        block: block
-      )
+    {rendered_block, rendered_chain_block} = render_block_views(block)
 
     push(socket, "new_block", %{
       average_block_time: Timex.format_duration(average_block_time, Explorer.Counters.AverageBlockTimeDurationFormat),
@@ -44,5 +48,28 @@ defmodule BlockScoutWeb.BlockChannel do
     })
 
     {:noreply, socket}
+  end
+
+  def render_block_views(block) do
+    if System.get_env("DISABLE_LIVE_UPDATES") == "true" do
+      {nil, nil}
+    else
+      rendered_block =
+        View.render_to_string(
+          BlockView,
+          "_tile.html",
+          block: block,
+          block_type: BlockView.block_type(block)
+        )
+
+      rendered_chain_block =
+        View.render_to_string(
+          ChainView,
+          "_block.html",
+          block: block
+        )
+
+      {rendered_block, rendered_chain_block}
+    end
   end
 end

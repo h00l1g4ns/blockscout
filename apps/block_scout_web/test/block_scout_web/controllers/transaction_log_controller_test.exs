@@ -5,7 +5,19 @@ defmodule BlockScoutWeb.TransactionLogControllerTest do
 
   import BlockScoutWeb.WebRouter.Helpers, only: [transaction_log_path: 3]
 
+  alias Explorer.Celo.CacheHelper
+  alias Explorer.Chain.Address
   alias Explorer.ExchangeRates.Token
+
+  setup :set_mox_global
+
+  setup do
+    CacheHelper.set_test_addresses(%{
+      "Governance" => "0xD533Ca259b330c7A88f74E000a3FaEa2d63B7972"
+    })
+
+    :ok
+  end
 
   describe "GET index/2" do
     test "with invalid transaction hash", %{conn: conn} do
@@ -44,7 +56,7 @@ defmodule BlockScoutWeb.TransactionLogControllerTest do
       {:ok, %{"items" => items}} = conn.resp_body |> Poison.decode()
       first_log = List.first(items)
 
-      assert String.contains?(first_log, to_string(address.hash))
+      assert String.contains?(first_log, Address.checksum(address.hash))
     end
 
     test "returns logs for the transaction with nil to_address", %{conn: conn} do
@@ -67,7 +79,7 @@ defmodule BlockScoutWeb.TransactionLogControllerTest do
       {:ok, %{"items" => items}} = conn.resp_body |> Poison.decode()
       first_log = List.first(items)
 
-      assert String.contains?(first_log, to_string(address.hash))
+      assert String.contains?(first_log, Address.checksum(address.hash))
     end
 
     test "assigns no logs when there are none", %{conn: conn} do
