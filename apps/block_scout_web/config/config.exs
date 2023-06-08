@@ -28,7 +28,8 @@ api_path =
 # General application configuration
 config :block_scout_web,
   namespace: BlockScoutWeb,
-  ecto_repos: [Explorer.Repo.Local, Explorer.Repo.Account]
+  ecto_repos: [Explorer.Repo.Local, Explorer.Repo.Account],
+  cookie_domain: System.get_env("SESSION_COOKIE_DOMAIN")
 
 # Urls for header _topnav menu bars
 import_config "navigation.exs"
@@ -117,7 +118,7 @@ config :ueberauth, Ueberauth,
   providers: [
     auth0: {
       Ueberauth.Strategy.Auth0,
-      [callback_path: "/auth/auth0/callback"]
+      [callback_path: "/auth/auth0/callback", callback_params: ["path"]]
     }
   ]
 

@@ -295,7 +295,7 @@ defmodule Explorer.Chain.InternalTransaction do
       false
       iex> changeset.errors
       [
-        gas_used: {"can't be present for failed call", []}
+        output: {"can't be present for failed call", []}
       ]
 
   Likewise, successful `:call`s require `input`, `gas_used` and `output` to be set. Looks like `output` might be unset now???
@@ -508,23 +508,11 @@ defmodule Explorer.Chain.InternalTransaction do
     end)
   end
 
-  #  @call_success_fields ~w(gas_used output)a
-  @call_success_fields ~w(gas_used)a
-
   # Validates that :call `type` changeset either has an `error` or both `gas_used` and `output`
   defp validate_call_error_or_result(changeset) do
     case get_field(changeset, :error) do
-      nil ->
-        changeset =
-          case get_field(changeset, :output) do
-            nil -> change(changeset, %{output: %Data{bytes: "stuff"}})
-            _ -> changeset
-          end
-
-        validate_required(changeset, @call_success_fields, message: "can't be blank for successful call")
-
-      _ ->
-        validate_disallowed(changeset, @call_success_fields, message: "can't be present for failed call")
+      nil -> validate_required(changeset, [:gas_used, :output], message: "can't be blank for successful call")
+      _ -> validate_disallowed(changeset, [:output], message: "can't be present for failed call")
     end
   end
 
