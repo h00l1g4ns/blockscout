@@ -289,10 +289,10 @@ function trackEvents () {
 
 // initiate analytics and store
 function initAnalytics () {
-  const gaMeasurementId = window.ANALYTICS_KEY;
+  const gaMeasurementId = window.ANALYTICS_KEY
 
-  if (typeof gaMeasurementId === "undefined" || gaMeasurementId === "") {
-    return;
+  if (typeof gaMeasurementId === 'undefined' || gaMeasurementId === '') {
+    return
   }
 
   // instantiate analytics
