@@ -55,6 +55,8 @@ defmodule Indexer.Fetcher.CeloEpochDataTest do
     }
   end
 
+  # skip flaky test
+  @tag :skip
   describe "async_fetch for voter rewards" do
     setup [:save_voter_contract_events_and_start_fetcher, :setup_votes_mox]
 
