@@ -1,0 +1,14 @@
+steps:
+  - name: "gcr.io/kaniko-project/executor:v1.6.0"
+    args: [
+          "--cache=true",
+          "--build-arg", "FORCE_MIX_COMPILE_CACHE_MISS=$COMMIT_SHA",
+          "--destination=gcr.io/$PROJECT_ID/blockscout:$COMMIT_SHA",
+          "--dockerfile", "docker/Dockerfile",
+          "--context", "dir://."]
+    waitFor: ["-"]
+
+options:
+    machineType: 'N1_HIGHCPU_32'
+
+timeout: 1200s
