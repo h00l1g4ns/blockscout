@@ -1,4 +1,4 @@
-FROM bitwalker/alpine-elixir-phoenix:1.13 AS builder
+FROM bitwalker/alpine-elixir-phoenix:1.15 AS builder
 
 WORKDIR /app
 
