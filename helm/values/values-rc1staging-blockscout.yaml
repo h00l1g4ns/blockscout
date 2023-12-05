@@ -67,10 +67,15 @@ blockscout:
       enabled: false
   metadataCrawler:
     enabled: true
+  dbMaintenance:
+    enabled: true
+    image:
+      repository: us-west1-docker.pkg.dev/devopsre/db-maintenance/db-maintenance-image
+      tag: 2e504f1c0062124e4326d44c6dbefeb4e8236b9d
   shared:
     image:
       repository: gcr.io/celo-testnet/blockscout
-      tag: 6dd0c330fd4916e6ff52d2ee494a71a16a63d15a
+      tag: 851e089d0e31b034de3f0acf10c6a2fabb40dd1d
     epochRewards:
       enabled: true
     secrets:
