@@ -71,7 +71,7 @@ blockscout:
     enabled: true
     image:
       repository: us-west1-docker.pkg.dev/devopsre/db-maintenance/db-maintenance-image
-      tag: 2e504f1c0062124e4326d44c6dbefeb4e8236b9d
+      tag: ca777587221043a266fa5421f5119a6319fb24a2
   shared:
     image:
       repository: gcr.io/celo-testnet/blockscout
