@@ -3933,5 +3933,5 @@ msgstr ""
 
 #: lib/block_scout_web/templates/layout/_topnav.html.eex:207
 #, elixir-autogen, elixir-format
-msgid "Derivates Platforms"
+msgid "Derivatives Platforms"
 msgstr ""
