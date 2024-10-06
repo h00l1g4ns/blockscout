@@ -608,12 +608,11 @@ endif
 else
 	@echo "==> Creating new PostgreSQL container"
 	@docker run -d --name $(PG_CONTAINER_NAME) \
-					-e POSTGRES_PASSWORD="" \
+					-e POSTGRES_PASSWORD="postgres" \
 					-e POSTGRES_USER="postgres" \
 					-e POSTGRES_HOST_AUTH_METHOD="trust" \
 					-p 5432:5432 \
 					$(PG_CONTAINER_IMAGE)
-	@sleep 1
 	@$(MAKE) -f $(THIS_FILE) migrate_only
 endif
 endif
@@ -627,20 +626,20 @@ start: build postgres
 					$(BS_CONTAINER_IMAGE) /bin/sh -c "./bin/blockscout start"
 
 BS_STARTED := $(shell docker ps --no-trunc --filter name=^/${BS_CONTAINER_NAME}$)
-stop:
+start:
 ifdef BS_STARTED
-	@echo "==> Stopping BlockScout container."
-	@docker stop $(BS_CONTAINER_NAME)
-	@echo "==> BlockScout container stopped."
+	@echo "==> Starting BlockScout container."
+	@docker start $(BS_CONTAINER_NAME)
+	@echo "==> BlockScout container started."
 else
-	@echo "==> BlockScout container already stopped before."
+	@echo "==> BlockScout container already started before."
 endif
 ifdef PG_STARTED
-	@echo "==> Stopping Postgres container."
-	@docker stop $(PG_CONTAINER_NAME)
-	@echo "==> Postgres container stopped."
+	@echo "==> Started Postgres container."
+	@docker start $(PG_CONTAINER_NAME)
+	@echo "==> Postgres container started."
 else
-	@echo "==> Postgres container already stopped before."
+	@echo "==> Postgres container already started before."
 endif
 
 run: start
